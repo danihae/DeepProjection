@@ -1,2 +1,1 @@
-# DeepProjection
-Trainable 2D projection of 3D microscopy stacks using deep learning
+# DeepProjection: Trainable, structure-specific, 2D projections of 3D epithelial tissue stacks
