@@ -97,7 +97,7 @@ class DataProcess:
             stack_i = tifffile.imread(file_i).astype('float32')
             save_i = os.path.splitext(os.path.basename(file_i))[0]
             save_i = save_i.replace(' ', '_')
-            if self.mode is 'max_projection':
+            if self.mode == 'max_projection':
                 # make maximum intensity projection
                 max_int_i = np.max(stack_i, axis=0)
                 # clip and normalize (0,255)
@@ -107,7 +107,7 @@ class DataProcess:
                 max_int_i = max_int_i / np.max(max_int_i) * 255
                 self.mask_shape = [1, max_int_i.shape[0], max_int_i.shape[1]]
                 tifffile.imsave(self.mask_path + save_i + '.tif', max_int_i.astype('int8'))
-            elif self.mode is 'binary_mask':
+            elif self.mode == 'binary_mask':
                 # make binary stack
                 stack_i[stack_i > 0] = 255
                 shape_i = stack_i.shape
@@ -128,7 +128,7 @@ class DataProcess:
         for i, file_i in enumerate(mask_files):
             basename_i = os.path.basename(file_i)
             mask_i = tifffile.imread(self.data_path + '/mask/' + basename_i)
-            if self.mode is 'max_projection':
+            if self.mode == 'max_projection':
                 mask_i = mask_i.reshape((1, mask_i.shape[0], mask_i.shape[1]))
             input_i = tifffile.imread(self.data_path + '/input/' + basename_i)
             merge = np.zeros((mask_i.shape[0] + input_i.shape[0], mask_i.shape[1], mask_i.shape[2]))

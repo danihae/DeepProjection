@@ -224,7 +224,7 @@ class TverskyLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, inputs, targets):
-        inputs = torch.sigmoid(inputs)
+        #  inputs = torch.sigmoid(inputs)
         inputs = inputs.view(-1)
         targets = targets.view(-1)
 
@@ -246,7 +246,7 @@ class logcoshTverskyLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, inputs, targets):
-        inputs = torch.sigmoid(inputs)
+        #  inputs = torch.sigmoid(inputs)
         inputs = inputs.view(-1)
         targets = targets.view(-1)
 

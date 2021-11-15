@@ -39,11 +39,11 @@ class Trainer:
         train_data, val_data = random_split(dataset, [num_train, num_val])
         self.train_loader = DataLoader(train_data, batch_size=self.batch_size, pin_memory=True, drop_last=True)
         self.val_loader = DataLoader(val_data, batch_size=self.batch_size, pin_memory=True, drop_last=True)
-        if self.loss_func is 'BCEDiceLoss':
+        if self.loss_func == 'BCEDiceLoss':
             self.criterion = BCEDiceLoss(self.loss_params[0], self.loss_params[1])
-        elif self.loss_func is 'TverskyLoss':
+        elif self.loss_func == 'TverskyLoss':
             self.criterion = TverskyLoss(self.loss_params[0], self.loss_params[1])
-        elif self.loss_func is 'logcoshTverskyLoss':
+        elif self.loss_func == 'logcoshTverskyLoss':
             self.criterion = logcoshTverskyLoss(self.loss_params[0], self.loss_params[1])
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', patience=5)
@@ -71,11 +71,11 @@ class Trainer:
                 y_pred, mask_pred, edge_pred = self.model(x_i)
 
                 # Compute and print loss
-                if self.mode is 'binary_mask':
+                if self.mode == 'binary_mask':
                     loss = self.criterion(mask_pred, y_i)
-                elif self.mode is 'max_projection':
+                elif self.mode == 'max_projection':
                     loss = self.criterion(y_pred, max_i)
-                elif self.mode is 'edge':
+                elif self.mode == 'edge':
                     mask_pred = mask_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
                     y_i = y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
                     edge_pred = edge_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
@@ -105,11 +105,11 @@ class Trainer:
                     y_pred, mask_pred, edge_pred = self.model(x_i)
 
                     # Compute and print loss
-                    if self.mode is 'binary_mask':
+                    if self.mode == 'binary_mask':
                         loss = self.criterion(mask_pred, y_i)
-                    elif self.mode is 'max_projection':
+                    elif self.mode == 'max_projection':
                         loss = self.criterion(y_pred, max_i)
-                    elif self.mode is 'edge':
+                    elif self.mode == 'edge':
                         mask_pred = mask_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
                         y_i = y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
                         edge_pred = edge_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
