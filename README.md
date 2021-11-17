@@ -1,6 +1,6 @@
 ### DeepProjection: Trainable, structure-specific, 2D projections of 3D epithelial tissue stacks
 
-Reference: 
+Reference: link to BioRxiv paper follows soon!
 
 **Abstract:** The efficient extraction of local high-resolution content from massive amounts of imaging data remains a serious and unsolved problem in studies of complex biological tissues. Here we present DeepProjection, a trainable projection algorithm based on deep learning. This algorithm rapidly and robustly extracts image content contained in curved manifolds from time-lapse recorded 3D image stacks by binary masking of background content, stack by stack. The masks calculated for a given movie, when predicted, e.g., on fluorescent cell boundaries on one channel, can subsequently be applied to project other fluorescent channels from the same manifold. We apply DeepProjection to follow the dynamic movements of 2D-tissue sheets in embryonic development. We show that we can selectively project the amnioserosa cell sheet during dorsal closure in Drosophila melanogaster embryos and the periderm layer in the elongating zebrafish embryo while masking highly fluorescent out-of-plane artifacts.
 
@@ -24,7 +24,8 @@ To be added soon (Dec 21)
 `import deepprojection as dp`
 
 ### Training and prediction of stacks
-A detailed instruction on how to train and use DeepProjection can by found [here](Quickstart_training_and_prediction.ipynb).
+A detailed instruction on how to train and use DeepProjection can by found [here](Quickstart_training_and_prediction.ipynb). 
+Training data, test data and pretrained networks for Drosophila dorsal closure and zebrafish periderm used in publication can be found [here](https://e.pcloud.link/publink/show?code=kZ81BJZAKSgyWiWhYka06JIhA3Cq7ow75y7).
 
 ### Graphical User Interface
 Run GUI in terminal by `python your_path/deepprojection/GUI.py`. Make sure to use an environment with all necessary packages installed.
