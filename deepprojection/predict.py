@@ -2,6 +2,7 @@ import gc
 import json
 
 from .utils import *
+from .ProjNet import ProjNet
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -16,7 +17,7 @@ class PredictMovie:
     weights: path to model weights
     """
 
-    def __init__(self, folder, model, weights, resize_dim=(512, 1024), clip_thrs=99.9, n_filter=8,
+    def __init__(self, folder, weights, model=ProjNet, filename_output=None, resize_dim=(512, 1024), clip_thrs=99.9, n_filter=8,
                  mask_thrs=None, folder_color=None, normalization_mode='movie', export_masks=False,
                  invert_slices=False):
         """
@@ -25,10 +26,12 @@ class PredictMovie:
         ----------
         folder : str
             Folder containing stacks (filesnames need to have time at end)
-        model
-            Network model
         weights : str
             Trained model weights
+        model
+            Network model
+        filename_output : str
+            If not None, output is save to filename_output. If None, it is saved in the parent directory of the input
         resize_dim : tuple(int, int)
             Resize dimensions (2**n, 2**n) with n>4
         clip_thrs : float
@@ -49,6 +52,7 @@ class PredictMovie:
         """
         self.folder = folder
         self.folder_color = folder_color
+        self.filename_output = filename_output
 
         # params
         self.resize_dim = resize_dim
@@ -208,14 +212,16 @@ class PredictMovie:
                 self.masks[i] = np.max(masks_i, axis=0)
         # change to input size (if zero padding) and save results
         self.results = self.results[:, :self.n_pixel[0], :self.n_pixel[1]]
-        tifffile.imsave(self.folder[:-1] + '.tif', self.results, metadata=self.info)
+        if self.filename_output == None:
+            tifffile.imsave(self.folder[:-1] + '.tif', self.results, metadata=self.info)
+        else:
+            tifffile.imsave(self.filename_output, self.results,
+                            metadata=self.info)
         del self.results
-        os.remove(self.temp_folder + f'/results/res_patches_{i}.tif')
         if self.export_masks:
             self.masks = self.masks[:, :, :self.n_pixel[0], :self.n_pixel[1]]
             del self.masks
-            os.remove(self.temp_folder + f'/results/masks_patches_{i}.tif')
-            # here save masks?
+            # todo here save masks
 
 
 class PredictStack:
@@ -223,7 +229,7 @@ class PredictStack:
     Class for prediction of single stacks
     """
 
-    def __init__(self, filename, filename_output, model, weights, resize_dim=(512, 1024), clip_thrs=99.98,
+    def __init__(self, filename, filename_output, weights, model=ProjNet, resize_dim=(512, 1024), clip_thrs=99.98,
                  n_filter=8, mask_thrs=None, export_masks=True, add_tile=0, invert_slices=False):
         """
 
@@ -233,10 +239,10 @@ class PredictStack:
             Filename of stack
         filename_output : str
             Filename of output
-        model
-            Network model
         weights : str
             Trained model weights
+        model
+            Network model
         resize_dim : tuple(int, int)
             Resize dimensions (2**n, 2**n) with n>4
         clip_thrs : float
