@@ -1,6 +1,5 @@
-### DeepProjection: Trainable, structure-specific, 2D projections of 3D epithelial tissue stacks
-
-Reference: link to BioRxiv paper follows soon!
+### DeepProjection: Rapid and structure-specific projections of tissue sheets embedded in 3D microscopy stacks using deep learning
+D. Haertter et al., bioRxiv 2021.11.17.468809; doi: https://doi.org/10.1101/2021.11.17.468809
 
 **Abstract:** The efficient extraction of local high-resolution content from massive amounts of imaging data remains a serious and unsolved problem in studies of complex biological tissues. Here we present DeepProjection, a trainable projection algorithm based on deep learning. This algorithm rapidly and robustly extracts image content contained in curved manifolds from time-lapse recorded 3D image stacks by binary masking of background content, stack by stack. The masks calculated for a given movie, when predicted, e.g., on fluorescent cell boundaries on one channel, can subsequently be applied to project other fluorescent channels from the same manifold. We apply DeepProjection to follow the dynamic movements of 2D-tissue sheets in embryonic development. We show that we can selectively project the amnioserosa cell sheet during dorsal closure in Drosophila melanogaster embryos and the periderm layer in the elongating zebrafish embryo while masking highly fluorescent out-of-plane artifacts.
 
@@ -13,7 +12,7 @@ Reference: link to BioRxiv paper follows soon!
 IMPORTANT: Convolutional neural networks run much faster on NVIDIA-GPUs than on CPUs. To enable training and prediction on GPUs, users need to install [CUDA toolkit](https://developer.nvidia.com/cuda-toolkit) and the corresponding version of PyTorch from the [official PyTorch website](https://pytorch.org/get-started/locally/). Select the correct version of CUDA on this webpage and run the command in your terminal. DeepProjection was tested with CUDA 11.0 and Pytorch 1.7.1.
 
 ### Python Package Index (PyPI)
-To be added soon (Dec 21)
+`pip install deepprojection`
 
 ### Manual installation
 1. Download the code using the GitHub [.zip](https://github.com/danihae/DeepProjection/archive/refs/heads/main.zip) download option or clone repository.
