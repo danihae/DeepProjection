@@ -25,7 +25,7 @@ class Projector(tk.Tk):
         self.save_dir = tk.StringVar(value='-select save directory-')
         self.weights = tk.StringVar(value='-select DeepProjection weights-')
         self.resize_dim = tk.StringVar(value='1024, 1024')
-        self.clip_thrs = tk.StringVar(value='99.98')
+        self.clip_thrs = tk.StringVar(value='0, 99.98')
         self.normalization_mode = tk.StringVar(value='movie')
 
         # build
@@ -111,9 +111,9 @@ class Projector(tk.Tk):
         self.ent_resize_dim = tk.Entry(lf_detector, textvar=self.resize_dim)
         self.ent_resize_dim.place(x=140, y=70, width=80)
         # clip threshold
-        tk.Label(lf_detector, text='Clip threshold [%]:').place(x=230, y=70)
+        tk.Label(lf_detector, text='Clip threshold [%]:').place(x=220, y=70)
         self.ent_clip_thrs = tk.Entry(lf_detector, textvar=self.clip_thrs)
-        self.ent_clip_thrs.place(x=340, y=70, width=40)
+        self.ent_clip_thrs.place(x=330, y=70, width=50)
         # normalization mode
         tk.Label(lf_detector, text='Normalization mode:').place(x=385, y=70)
         self.combo_normalization_mode = ttk.Combobox(lf_detector, textvariable=self.normalization_mode,
@@ -231,7 +231,7 @@ class Projector(tk.Tk):
                     print(stack)
                     PredictStack(stack, filename_output=save_name, weights=str(self.weights.get()),
                                  resize_dim=eval(self.resize_dim.get()),
-                                 clip_thrs=float(self.clip_thrs.get()))
+                                 clip_thrs=eval(self.clip_thrs.get()))
                     self.listbox_stacks.itemconfig(i, bg='green', fg='white')
                     self.update()
                 except Exception as e:
@@ -246,7 +246,7 @@ class Projector(tk.Tk):
                     self.update()
                     PredictMovie(dir, weights=str(self.weights.get()),
                                  resize_dim=eval(self.resize_dim.get()),
-                                 clip_thrs=float(self.clip_thrs.get()),
+                                 clip_thrs=eval(self.clip_thrs.get()),
                                  normalization_mode=str(self.combo_normalization_mode.get()))
                     self.listbox_movies.itemconfig(i, bg='green', fg='white')
                     self.update()
