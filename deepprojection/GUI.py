@@ -229,7 +229,7 @@ class Projector(tk.Tk):
                     self.update()
                     save_name = str(self.save_dir.get()) + os.path.basename(stack)
                     print(stack)
-                    PredictStack(stack, filename_output=save_name, model=ProjNet, weights=str(self.weights.get()),
+                    PredictStack(stack, filename_output=save_name, weights=str(self.weights.get()),
                                  resize_dim=eval(self.resize_dim.get()),
                                  clip_thrs=float(self.clip_thrs.get()))
                     self.listbox_stacks.itemconfig(i, bg='green', fg='white')
@@ -244,7 +244,7 @@ class Projector(tk.Tk):
                 try:
                     self.listbox_movies.itemconfig(i, bg='blue', fg='white')
                     self.update()
-                    PredictMovie(dir, model=ProjNet, weights=str(self.weights.get()),
+                    PredictMovie(dir, weights=str(self.weights.get()),
                                  resize_dim=eval(self.resize_dim.get()),
                                  clip_thrs=float(self.clip_thrs.get()),
                                  normalization_mode=str(self.combo_normalization_mode.get()))
@@ -252,7 +252,6 @@ class Projector(tk.Tk):
                     self.update()
                 except Exception as e:
                     print(f'ERROR: {dir} could not be predicted.')
-                    print(e)
                     self.listbox_movies.itemconfig(i, bg='red', fg='white')
                     self.update()
         self.set_ready()
