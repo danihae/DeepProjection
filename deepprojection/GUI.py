@@ -252,6 +252,7 @@ class Projector(tk.Tk):
                     self.update()
                 except Exception as e:
                     print(f'ERROR: {dir} could not be predicted.')
+                    print(e)
                     self.listbox_movies.itemconfig(i, bg='red', fg='white')
                     self.update()
         self.set_ready()
