@@ -90,11 +90,12 @@ def convert_to_stack(folder_in, folder_out, invert_order=False):
 class MaxProjection:
     """maximum intensity projection w/o normalization"""
 
-    def __init__(self, folder, filename_output=None):
+    def __init__(self, folder, filename_output=None, bigtiff=False):
         self.files = np.asarray([file for file in glob.glob(folder + '*') if 'txt' not in file])
         self.filename_output = filename_output
         if filename_output is None:
             self.filename_output = folder[:-1] + '_max_int.tif'
+        self.bigtiff = bigtiff
         self.shape = tifffile.imread(self.files[0]).shape
         self.get_data_structure()
         self.max_projection()
@@ -151,7 +152,7 @@ class MaxProjection:
                     stack_t = self.files[self.ts == t]
                     tif.write(np.mean(stack_t, axis=0))
         if self.data_mode == 'images':
-            with tifffile.TiffWriter(self.filename_output) as tif:
+            with tifffile.TiffWriter(self.filename_output, bigtiff=self.bigtiff) as tif:
                 for t in tqdm(range(self.n_frames)):
                     stack_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
                     files_t = self.files[self.ts == t]
@@ -162,8 +163,8 @@ class MaxProjection:
                     tif.write(np.max(stack_t, axis=0))
 
         if self.data_mode == 'two_color':
-            with tifffile.TiffWriter(self.filename_output[:-4] + '_c0.tif') as tif_c0, \
-                    tifffile.TiffWriter(self.filename_output[:-4] + '_c1.tif') as tif_c1:
+            with tifffile.TiffWriter(self.filename_output[:-4] + '_c0.tif', bigtiff=self.bigtiff) as tif_c0, \
+                    tifffile.TiffWriter(self.filename_output[:-4] + '_c1.tif', bigtiff=self.bigtiff) as tif_c1:
                 for t in tqdm(range(self.n_frames)):
                     stack_c0_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
                     stack_c1_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
