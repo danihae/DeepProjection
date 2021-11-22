@@ -12,6 +12,7 @@ from deepprojection import MaxProjection, PredictMovie, PredictStack, ProjNet, g
 
 class Projector(tk.Tk):
     """Graphical user interface for DeepProjection"""
+
     def __init__(self):
         tk.Tk.__init__(self)
         self.geometry('600x400')
@@ -27,13 +28,14 @@ class Projector(tk.Tk):
         self.resize_dim = tk.StringVar(value='1024, 1024')
         self.clip_thrs = tk.StringVar(value='0, 99.98')
         self.normalization_mode = tk.StringVar(value='movie')
+        self.temp_dir = tk.StringVar(value='./temp/')
+        self.invert_slices = tk.IntVar(value=False)
+        self.bigtiff = tk.IntVar(value=False)
 
         # build
         self.build_statusbar()
         self.build_path_handler()
         self.build_detector()
-
-        print()
 
     # gui
     def build_path_handler(self):
@@ -86,14 +88,14 @@ class Projector(tk.Tk):
         self.statusbar.place(x=0, y=380)
         link = tk.Label(self, text="Project homepage", fg="blue", cursor="hand2")
         link.place(x=490, y=380)
-        link.bind("<Button-1>", lambda e: webbrowser.open_new('https://gitlab.oit.duke.edu/dh287/projnet'))
+        link.bind("<Button-1>", lambda e: webbrowser.open_new('https://github.com/danihae/DeepProjection/'))
 
     def build_converter(self):
         pass
 
     def build_detector(self):
         lf_detector = tk.LabelFrame(self, text='DeepProjection prediction')
-        lf_detector.place(x=5, y=190, width=590, height=180)
+        lf_detector.place(x=5, y=190, width=590, height=185)
         # save dir
         tk.Label(lf_detector, text='Save directory:').place(x=5, y=10)
         self.ent_save_dir = tk.Entry(lf_detector, textvar=self.save_dir)
@@ -109,7 +111,7 @@ class Projector(tk.Tk):
         # resize dimensions
         tk.Label(lf_detector, text='Resize dimensions [px]:').place(x=5, y=70)
         self.ent_resize_dim = tk.Entry(lf_detector, textvar=self.resize_dim)
-        self.ent_resize_dim.place(x=140, y=70, width=80)
+        self.ent_resize_dim.place(x=140, y=70, width=60)
         # clip threshold
         tk.Label(lf_detector, text='Clip threshold [%]:').place(x=220, y=70)
         self.ent_clip_thrs = tk.Entry(lf_detector, textvar=self.clip_thrs)
@@ -120,11 +122,25 @@ class Projector(tk.Tk):
                                                      values=['movie', 'stack'])
         self.combo_normalization_mode.place(x=510, y=70, width=60)
         self.combo_normalization_mode.set('movie')
+        # temp folder
+        tk.Label(lf_detector, text='Temp. directory:').place(x=5, y=100)
+        self.ent_temp_dir = tk.Entry(lf_detector, textvar=self.temp_dir)
+        self.ent_temp_dir.place(x=120, y=102, width=220)
+        self.button_temp_dir = tk.Button(lf_detector, text='Browse', command=self.select_temp_dir)
+        self.button_temp_dir.place(x=350, y=98)
+        # invert slices
+        self.radio_invert_slices = tk.Checkbutton(lf_detector, text='Invert slices', variable=self.invert_slices,
+                                                  onvalue=1, offvalue=0)
+        self.radio_invert_slices.place(x=420, y=100)
+        # bigtiff
+        self.radio_bigtiff = tk.Checkbutton(lf_detector, text='BigTIFF', variable=self.bigtiff,
+                                            onvalue=1, offvalue=0)
+        self.radio_bigtiff.place(x=510, y=100)
         # buttons for prediction
         self.button_detect = tk.Button(lf_detector, text='Predict with DeepProjection', command=self.predict)
-        self.button_detect.place(x=5, y=120, width=280)
+        self.button_detect.place(x=5, y=135, width=280)
         self.button_max_int = tk.Button(lf_detector, text='Maximum intensity projection', command=self.max_projection)
-        self.button_max_int.place(x=300, y=120, width=280)
+        self.button_max_int.place(x=300, y=135, width=280)
 
     # set status bar idle or ready
     def set_idle(self):
@@ -196,16 +212,18 @@ class Projector(tk.Tk):
     def switch_tab_stacks_movies(self, event=None):
         if self.nb_paths.index('current') == 0:
             self.combo_normalization_mode['state'] = tk.DISABLED
-            self.ent_save_dir['state'] = tk.NORMAL
             self.save_dir.set('-select save directory-')
-            self.button_save_dir['state'] = tk.NORMAL
             self.button_max_int['state'] = tk.DISABLED
+            self.radio_bigtiff['state'] = tk.DISABLED
+            self.ent_temp_dir['state'] = tk.DISABLED
+            self.button_temp_dir['state'] = tk.DISABLED
         elif self.nb_paths.index('current') == 1:
             self.combo_normalization_mode['state'] = tk.NORMAL
-            self.ent_save_dir['state'] = tk.DISABLED
-            self.button_save_dir['state'] = tk.DISABLED
             self.button_max_int['state'] = tk.NORMAL
             self.save_dir.set('-predicted movies saved in parent directory-')
+            self.radio_bigtiff['state'] = tk.NORMAL
+            self.ent_temp_dir['state'] = tk.NORMAL
+            self.button_temp_dir['state'] = tk.NORMAL
         self.update()
 
     def select_save_dir(self):
@@ -213,6 +231,12 @@ class Projector(tk.Tk):
                                                 initialdir='../')
         save_dir = save_dir.replace('\\', '/') + '/'
         self.save_dir.set(save_dir)
+
+    def select_temp_dir(self):
+        temp_dir = tkfilebrowser.askopendirname(title='Select temp. directory', okbuttontext='Select',
+                                                initialdir='../')
+        temp_dir = temp_dir.replace('\\', '/') + '/'
+        self.temp_dir.set(temp_dir)
 
     def select_weights(self):
         path_weights = tkfilebrowser.askopenfilename(title='Select DeepProjection weights', okbuttontext='Select',
@@ -231,7 +255,8 @@ class Projector(tk.Tk):
                     print(stack)
                     PredictStack(stack, filename_output=save_name, weights=str(self.weights.get()),
                                  resize_dim=eval(self.resize_dim.get()),
-                                 clip_thrs=eval(self.clip_thrs.get()))
+                                 clip_thrs=eval(self.clip_thrs.get()),
+                                 invert_slices=bool(self.invert_slices.get()))
                     self.listbox_stacks.itemconfig(i, bg='green', fg='white')
                     self.update()
                 except Exception as e:
@@ -241,13 +266,20 @@ class Projector(tk.Tk):
                     self.update()
         elif self.nb_paths.index('current') == 1:
             for i, dir in enumerate(self.dirnames):
+                if str(self.save_dir.get()) == '-predicted movies saved in parent directory-':
+                    filename_output = None
+                else:
+                    filename_output = str(self.save_dir.get()) + os.path.basename(dir[:-1]) + '.tif'
                 try:
                     self.listbox_movies.itemconfig(i, bg='blue', fg='white')
                     self.update()
                     PredictMovie(dir, weights=str(self.weights.get()),
+                                 filename_output=filename_output,
                                  resize_dim=eval(self.resize_dim.get()),
                                  clip_thrs=eval(self.clip_thrs.get()),
-                                 normalization_mode=str(self.combo_normalization_mode.get()))
+                                 normalization_mode=str(self.combo_normalization_mode.get()),
+                                 temp_folder=str(self.temp_dir.get()),
+                                 bigtiff=bool(self.bigtiff.get()), invert_slices=bool(self.invert_slices.get()))
                     self.listbox_movies.itemconfig(i, bg='green', fg='white')
                     self.update()
                 except Exception as e:
@@ -260,30 +292,33 @@ class Projector(tk.Tk):
     def max_projection(self):
         self.set_idle()
         if self.nb_paths.index('current') == 0:
-            for i, dir in enumerate(self.dirnames):
-                try:
-                    self.listbox_movies.itemconfig(i, bg='blue', fg='white')
-                    self.update()
-                    res_name = dir[:-1] + '_MAX.tif'
-                    MaxProjection(dir, res_name)
-                    self.listbox_movies.itemconfig(i, bg='green', fg='white')
-                    self.update()
-                except:
-                    print(f'ERROR: maximum intensity projection for {dir} failed.')
-                    self.listbox_movies.itemconfig(i, bg='red', fg='white')
-                    self.update()
-        elif self.nb_paths.index('current') == 1:
             for i, stack in enumerate(self.stacknames):
                 try:
                     self.listbox_stacks.itemconfig(i, bg='blue', fg='white')
                     self.update()
                     res_name = stack[:-1] + '_MAX.tif'
-                    MaxProjection(stack, res_name)
+                    MaxProjection(stack, res_name, bigtiff=bool(self.bigtiff.get()))
                     self.listbox_stacks.itemconfig(i, bg='green', fg='white')
                     self.update()
                 except:
                     print(f'ERROR: maximum intensity projection for {stack} failed.')
                     self.listbox_stacks.itemconfig(i, bg='red', fg='white')
+                    self.update()
+        elif self.nb_paths.index('current') == 1:
+            for i, dir in enumerate(self.dirnames):
+                if str(self.save_dir.get()) == '-predicted movies saved in parent directory-':
+                    filename_output = dir[:-1] + '_MAX.tif'
+                else:
+                    filename_output = str(self.save_dir.get()) + os.path.basename(dir[:-1]) + '.tif'
+                try:
+                    self.listbox_movies.itemconfig(i, bg='blue', fg='white')
+                    self.update()
+                    MaxProjection(dir, filename_output=filename_output, bigtiff=bool(self.bigtiff.get()))
+                    self.listbox_movies.itemconfig(i, bg='green', fg='white')
+                    self.update()
+                except:
+                    print(f'ERROR: maximum intensity projection for {dir} failed.')
+                    self.listbox_movies.itemconfig(i, bg='red', fg='white')
                     self.update()
         self.set_ready()
 
