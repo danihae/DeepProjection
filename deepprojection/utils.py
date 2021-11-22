@@ -92,24 +92,27 @@ class MaxProjection:
 
     def __init__(self, folder, filename_output=None):
         self.files = np.asarray([file for file in glob.glob(folder + '*') if 'txt' not in file])
+        self.filename_output = filename_output
+        if filename_output is None:
+            self.filename_output = folder[:-1] + '_max_int.tif'
         self.shape = tifffile.imread(self.files[0]).shape
         self.get_data_structure()
         self.max_projection()
-        # save movie
-        if filename_output is None:
-            filename_output = folder[:-1] + '_max_int'
-        if self.data_mode == 'two_color':
-            tifffile.imsave(filename_output + '_c0.tif', self.arr_max_proj_c0)
-            tifffile.imsave(filename_output + '_c1.tif', self.arr_max_proj_c1)
-            del self.arr_max_proj_c0, self.arr_max_proj_c1
-        else:
-            tifffile.imsave(filename_output + '.tif', self.arr_max_proj)
-            del self.arr_max_proj
 
     def get_data_structure(self):
         if len(self.shape) == 3:  # if files are stacks
+            ts = []
             self.data_mode = 'stacks'
             self.n_frames, self.n_slices, self.n_pixel = len(self.files), self.shape[0], self.shape[1:]
+            for file_i in self.files:
+                try:
+                    t = int(re.findall('t[0-9]+', file_i)[0][1:])
+                except:
+                    t = int(re.findall('time[0-9]+', file_i)[0][4:])
+                ts.append(t)
+                self.ts = ts
+                if 0 not in self.ts:
+                    self.ts -= np.min(self.ts)
         elif len(self.shape) == 2:  # if files are single images
             self.data_mode = 'images'
             # get # frames and stacks and create array
@@ -143,36 +146,37 @@ class MaxProjection:
     def max_projection(self):
         # iterate through files and max projection
         if self.data_mode == 'stacks':
-            self.arr_max_proj = np.zeros((self.n_frames, self.n_pixel[0], self.n_pixel[1]), dtype='uint16')
-            for file_i in tqdm(self.files):
-                t = int(re.findall('[0-9]+.TIF', file_i)[0][:-4]) - 1
-                self.arr_max_proj[t] = np.max(tifffile.imread(file_i), axis=0)
+            with tifffile.TiffWriter(self.filename_output) as tif:
+                for t in tqdm(range(self.n_frames)):
+                    stack_t = self.files[self.ts == t]
+                    tif.write(np.mean(stack_t, axis=0))
         if self.data_mode == 'images':
-            self.arr_max_proj = np.zeros((self.n_frames, self.n_pixel[0], self.n_pixel[1]), dtype='uint16')
-            for t in tqdm(range(self.n_frames)):
-                stack_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
-                files_t = self.files[self.ts == t]
-                z_t = self.zs[self.ts == t]
-                for z in range(self.n_slices):
-                    file_z = files_t[z_t == z]
-                    stack_t[z] = tifffile.imread(file_z)
-                self.arr_max_proj[t] = np.max(stack_t, axis=0)
+            with tifffile.TiffWriter(self.filename_output) as tif:
+                for t in tqdm(range(self.n_frames)):
+                    stack_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
+                    files_t = self.files[self.ts == t]
+                    z_t = self.zs[self.ts == t]
+                    for z in range(self.n_slices):
+                        file_z = files_t[z_t == z]
+                        stack_t[z] = tifffile.imread(file_z)
+                    tif.write(np.max(stack_t, axis=0))
+
         if self.data_mode == 'two_color':
-            self.arr_max_proj_c0 = np.zeros((self.n_frames, self.n_pixel[0], self.n_pixel[1]), dtype='uint16')
-            self.arr_max_proj_c1 = np.zeros((self.n_frames, self.n_pixel[0], self.n_pixel[1]), dtype='uint16')
-            for t in tqdm(range(self.n_frames)):
-                stack_c0_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
-                stack_c1_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
-                files_t = self.files[self.ts == t]
-                z_t = self.zs[self.ts == t]
-                c_t = self.cs[self.ts == t]
-                for z in range(self.n_slices):
-                    file_c0_z = files_t[(z_t == z) & (c_t == 0)]
-                    file_c1_z = files_t[(z_t == z) & (c_t == 1)]
-                    stack_c0_t[z] = tifffile.imread(file_c0_z)
-                    stack_c1_t[z] = tifffile.imread(file_c1_z)
-                self.arr_max_proj_c0[t] = np.max(stack_c0_t, axis=0)
-                self.arr_max_proj_c1[t] = np.max(stack_c1_t, axis=0)
+            with tifffile.TiffWriter(self.filename_output[:-4] + '_c0.tif') as tif_c0, \
+                    tifffile.TiffWriter(self.filename_output[:-4] + '_c1.tif') as tif_c1:
+                for t in tqdm(range(self.n_frames)):
+                    stack_c0_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
+                    stack_c1_t = np.zeros((self.n_slices, *self.n_pixel), dtype='uint16')
+                    files_t = self.files[self.ts == t]
+                    z_t = self.zs[self.ts == t]
+                    c_t = self.cs[self.ts == t]
+                    for z in range(self.n_slices):
+                        file_c0_z = files_t[(z_t == z) & (c_t == 0)]
+                        file_c1_z = files_t[(z_t == z) & (c_t == 1)]
+                        stack_c0_t[z] = tifffile.imread(file_c0_z)
+                        stack_c1_t[z] = tifffile.imread(file_c1_z)
+                    tif_c0.write(np.max(stack_c0_t, axis=0))
+                    tif_c1.write(np.max(stack_c1_t, axis=0))
 
 
 class BCEDiceLoss(nn.Module):
