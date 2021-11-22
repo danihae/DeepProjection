@@ -15,7 +15,7 @@ class PredictMovie:
 
     def __init__(self, folder, weights, model=ProjNet, filename_output=None, resize_dim=(512, 1024),
                  clip_thrs=(0, 99.9), n_filter=8, mask_thrs=None, folder_color=None, normalization_mode='movie',
-                 export_masks=False, invert_slices=False, temp_folder='./temp/', bigtiff=False):
+                 export_masks=False, invert_slices=False, temp_folder='../temp/', bigtiff=False):
         """
 
         Parameters
@@ -49,6 +49,8 @@ class PredictMovie:
         bigtiff : bool
             If True, bigtiff format is used (file size >4GB)
         """
+        print(f'Predicting {folder} ...')
+
         self.folder = folder
         self.folder_color = folder_color
         self.filename_output = filename_output
@@ -62,7 +64,6 @@ class PredictMovie:
         self.info = {'model': weights, 'mask_thrs': mask_thrs, 'clip_thrs': clip_thrs,
                      'normalization_mode': normalization_mode}
         # temp folder
-        self.temp_folder = './temp/'
         if os.path.exists(self.temp_folder):
             shutil.rmtree(self.temp_folder)
         os.makedirs(self.temp_folder, exist_ok=True)
@@ -103,6 +104,7 @@ class PredictMovie:
                                        export_masks=False, invert_slices=invert_slices)
                 tif.write(stack_t.result, metadata=self.info)
 
+        print(f'Result saved to {filename_output}.')
         # delete temp folder
         shutil.rmtree(self.temp_folder)
 
