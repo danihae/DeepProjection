@@ -150,7 +150,7 @@ class MaxProjection:
             with tifffile.TiffWriter(self.filename_output) as tif:
                 for t in tqdm(range(self.n_frames)):
                     stack_t = self.files[self.ts == t]
-                    tif.write(np.mean(stack_t, axis=0))
+                    tif.write(np.mean(stack_t, axis=0), contiguous=True)
         if self.data_mode == 'images':
             with tifffile.TiffWriter(self.filename_output, bigtiff=self.bigtiff) as tif:
                 for t in tqdm(range(self.n_frames)):
@@ -160,7 +160,7 @@ class MaxProjection:
                     for z in range(self.n_slices):
                         file_z = files_t[z_t == z]
                         stack_t[z] = tifffile.imread(file_z)
-                    tif.write(np.max(stack_t, axis=0))
+                    tif.write(np.max(stack_t, axis=0), contiguous=True)
 
         if self.data_mode == 'two_color':
             with tifffile.TiffWriter(self.filename_output[:-4] + '_c0.tif', bigtiff=self.bigtiff) as tif_c0, \
@@ -176,8 +176,8 @@ class MaxProjection:
                         file_c1_z = files_t[(z_t == z) & (c_t == 1)]
                         stack_c0_t[z] = tifffile.imread(file_c0_z)
                         stack_c1_t[z] = tifffile.imread(file_c1_z)
-                    tif_c0.write(np.max(stack_c0_t, axis=0))
-                    tif_c1.write(np.max(stack_c1_t, axis=0))
+                    tif_c0.write(np.max(stack_c0_t, axis=0), contiguous=True)
+                    tif_c1.write(np.max(stack_c1_t, axis=0), contiguous=True)
 
 
 class BCEDiceLoss(nn.Module):

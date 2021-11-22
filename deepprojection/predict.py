@@ -102,7 +102,7 @@ class PredictMovie:
                                        model=model, resize_dim=resize_dim, clip_thrs=clip_thrs,
                                        clip_values=clip_values, n_filter=n_filter, mask_thrs=mask_thrs,
                                        export_masks=False, invert_slices=invert_slices)
-                tif.write(stack_t.result, metadata=self.info)
+                tif.write(stack_t.result, metadata=self.info, contiguous=True)
 
         print(f'Result saved to {filename_output}.')
         # delete temp folder

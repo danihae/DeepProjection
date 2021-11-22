@@ -119,7 +119,7 @@ class Projector(tk.Tk):
         # normalization mode
         tk.Label(lf_detector, text='Normalization mode:').place(x=385, y=70)
         self.combo_normalization_mode = ttk.Combobox(lf_detector, textvariable=self.normalization_mode,
-                                                     values=['movie', 'stack'])
+                                                     values=['movie', 'stack', 'first'])
         self.combo_normalization_mode.place(x=510, y=70, width=60)
         self.combo_normalization_mode.set('movie')
         # temp folder
