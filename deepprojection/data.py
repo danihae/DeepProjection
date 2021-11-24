@@ -114,6 +114,8 @@ class DataProcess(Dataset):
             stack_i = stack_i / np.max(stack_i) * 255
             stack_i = stack_i.astype('uint8')
             shape_i = stack_i.shape
+            if self.n_slices<shape_i[0]:
+                raise ValueError(f'n_slices needs to be larger than number of slices. {file_i}: {shape_i[0]} slices.')
             stack_i = np.pad(stack_i, ((0, self.n_slices - shape_i[0]), (0, 0), (0, 0)), mode=self.padding_mode)
             save_i = os.path.splitext(os.path.basename(file_i))[0]
             save_i = save_i.replace(' ', '_')
