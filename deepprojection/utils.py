@@ -102,7 +102,6 @@ class MaxProjection:
         self.max_projection()
 
     def get_data_structure(self):
-        """Determine data structure"""
         if len(self.shape) == 3:  # if files are stacks
             ts = []
             self.data_mode = 'stacks'
