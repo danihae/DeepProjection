@@ -29,7 +29,7 @@ class PredictMovie:
         filename_output : str
             If not None, output is save to filename_output. If None, it is saved in the parent directory of the input
         resize_dim : tuple(int, int)
-            Resize dimensions (2**n, 2**n) with n>4
+            Resize dimensions (has to be divisible by 8)
         clip_thrs : tuple(float, float)
             Lower and higher percentile for intensity clipping
         n_filter : int
@@ -58,6 +58,9 @@ class PredictMovie:
 
         # params
         self.resize_dim = resize_dim
+        # check resize_dim
+        if np.count_nonzero(np.mod(resize_dim, 8)) > 0:
+            raise ValueError(f'resize_dim {resize_dim} has to be divisible by 8.')
         self.n_filter = n_filter
         self.mask_thrs = mask_thrs
         self.export_masks = export_masks

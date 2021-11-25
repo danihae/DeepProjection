@@ -30,7 +30,7 @@ class DataProcess(Dataset):
         source_dirs : tuple(str, str)
             Training data directories [raw_stacks_dir, masked_stacks_dir]
         dim_out : tuple(int, int)
-            Resize dimensions (2**n, 2**n) for n>6
+            Resize dimensions (has to be divisable by 8)
         n_slices : int
             Number of slices per stack (needs to be larger than maximal slice number in data set, stacks smaller are
             zero-padded)
@@ -65,6 +65,9 @@ class DataProcess(Dataset):
         self.input_path = self.data_path + '/input/'
         self.source_dirs = source_dirs
         self.dim_out = dim_out
+        # check dim_out
+        if np.count_nonzero(np.mod(dim_out, 8))>0:
+            raise ValueError(f'dim_out {dim_out} has to be divisible by 8.')
         self.aug_factor = aug_factor
         self.brightness_contrast = brightness_contrast
         self.noise_amp = noise_amp
