@@ -97,7 +97,7 @@ class PredictMovie:
         # predict stacks and write in tiff file
         print('Predicting stacks...')
         with tifffile.TiffWriter(filename_output, bigtiff=bigtiff) as tif:
-            for t in tqdm(tqdm(range(self.n_frames))):
+            for t in tqdm(range(self.n_frames)):
                 stack_t = PredictStack(self.temp_folder + f'/stack_{t}.tif', filename_output=None, weights=weights,
                                        model=model, resize_dim=resize_dim, clip_thrs=clip_thrs,
                                        clip_values=clip_values, n_filter=n_filter, mask_thrs=mask_thrs,
