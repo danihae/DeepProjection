@@ -41,26 +41,25 @@ def convert_to_stack(folder_in, folder_out, invert_order=False):
     os.makedirs(folder_out, exist_ok=True)
     files = np.asarray([file for file in glob.glob(folder_in + '*') if 'txt' not in file])
     shape = tifffile.imread(files[0]).shape
-    # if len(shape) == 4:  # two color stack
+    # if len(shape) == 4:  # two color stack todo to be implemented
 
     if len(shape) == 3:  # if files are stacks
         for file_i in files:
-            t = int(re.findall('[0-9]+.TIF', file_i)[0][:-4]) - 1
+            if 'time' in file_i:
+                t = int(re.findall(r'time(\d+)', file_i)[0])
+            else:
+                t = int(re.findall(r't(\d+)', file_i)[0])
             shutil.copy(file_i, folder_out + f'stack_{t}.tif')
         n_frames, n_slices, n_pixel = len(files), shape[0], shape[1:]
     elif len(shape) == 2:  # if files are single images
         # get # frames and stacks and create array
         ts, zs = [], []
         for file_i in files:
-            if 'Default' in file_i:
-                t = int(re.findall('img_[0-9]+', file_i)[0][4:])
-                z = int(re.findall('Default_[0-9]+', file_i)[0][8:])
+            if 'time' in file_i:
+                t = int(re.findall(r'time(\d+)', file_i)[0])
             else:
-                try:
-                    t = int(re.findall('t[0-9]+', file_i)[0][1:])
-                except:
-                    t = int(re.findall('time[0-9]+', file_i)[0][4:])
-                z = int(re.findall('z[0-9]+', file_i)[0][1:])
+                t = int(re.findall(r't(\d+)', file_i)[0])
+            z = int(re.findall(r'z(\d+)', file_i)[0])
             ts.append(t)
             zs.append(z)
         ts, zs = np.asarray(ts), np.asarray(zs)
@@ -101,15 +100,16 @@ class MaxProjection:
         self.max_projection()
 
     def get_data_structure(self):
+        """Determine data structure"""
         if len(self.shape) == 3:  # if files are stacks
             ts = []
             self.data_mode = 'stacks'
             self.n_frames, self.n_slices, self.n_pixel = len(self.files), self.shape[0], self.shape[1:]
             for file_i in self.files:
-                try:
-                    t = int(re.findall('t[0-9]+', file_i)[0][1:])
-                except:
-                    t = int(re.findall('time[0-9]+', file_i)[0][4:])
+                if 'time' in file_i:
+                    t = int(re.findall(r'time(\d+)', file_i)[0])
+                else:
+                    t = int(re.findall(r't(\d+)', file_i)[0])
                 ts.append(t)
                 self.ts = ts
                 if 0 not in self.ts:
@@ -119,12 +119,12 @@ class MaxProjection:
             # get # frames and stacks and create array
             ts, zs, cs = [], [], []
             for file_i in self.files:
-                try:
-                    t = int(re.findall('t[0-9]+', file_i)[0][1:])
-                except:
-                    t = int(re.findall('time[0-9]+', file_i)[0][4:])
-                z = int(re.findall('z[0-9]+', file_i)[0][1:])
-                c = int(re.findall('channel[0-9]+', file_i)[0][7:])
+                if 'time' in file_i:
+                    t = int(re.findall(r'time(\d+)', file_i)[0])
+                else:
+                    t = int(re.findall(r't(\d+)', file_i)[0])
+                z = int(re.findall(r'z(\d+)', file_i)[0])
+                c = int(re.findall(r'channel(\d+)', file_i)[0])
                 ts.append(t)
                 zs.append(z)
                 cs.append(c)
