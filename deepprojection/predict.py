@@ -36,7 +36,7 @@ class PredictMovie:
             Number of convolutional filters
         mask_thrs : float = None
             If not None, additional binary thresholding of predicted masks
-        folder_color : str
+        folder_color
             If not None, masks are applied to stacks of second fluorescent channel in folder_color
         normalization_mode : str
             If 'movie', the intensity is normalized based on a cummulative histogram of all stacks, if 'stack',

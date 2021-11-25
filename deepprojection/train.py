@@ -15,7 +15,7 @@ class Trainer:
     Class for training of neural network for surface projection
     """
     def __init__(self, dataset, num_epochs, network, mode='binary_mask',
-                 n_slices=20, batch_size=4, n_filter=32, lr=1e-4, momentum=0.99, val_split=0.25, save_dir='./',
+                 n_slices=20, batch_size=4, n_filter=32, lr=1e-4, val_split=0.25, save_dir='./trained_networks/',
                  load_weights=None, save_iterations=False, weights_edge_loss=(1, 0), loss_func='BCEDiceLoss',
                  loss_params=(1, 1)):
         """
@@ -162,7 +162,6 @@ class Trainer:
         Start training of DeepProjection
         """
         for epoch in range(self.num_epochs):
-            self.epoch += 1
             self.__iterate('train')
             self.state = {
                 'epoch': self.epoch,
@@ -186,7 +185,7 @@ class Trainer:
                 'mode': self.dataset.mode,
             }
             val_loss = self.__iterate('val')
-            self.state['loss'][self.epoch] = val_loss.cpu().numpy()
+            self.state['loss'][epoch] = val_loss.cpu().numpy()
             self.scheduler.step(val_loss)
             if val_loss < self.best_loss:
                 print('\nValidation loss improved from %s to %s - saving model state' % (
@@ -194,5 +193,5 @@ class Trainer:
                 self.state['best_loss'] = self.best_loss = val_loss
                 torch.save(self.state, self.save_dir + f'/model_best.pth')
             if self.save_iterations:
-                torch.save(self.state, self.save_dir + f'/model_e{epoch}.pth')
-
+                torch.save(self.state, self.save_dir + f'/model_e{self.epoch}.pth')
+            self.epoch += 1
