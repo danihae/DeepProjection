@@ -184,11 +184,12 @@ class Projector(tk.Tk):
             self.listbox_movies.insert(tk.END, dir)
 
     def get_subdirectories(self):
-        base_folder = tkfilebrowser.askopendirname(title='Select base-directory', okbuttontext='Find stack folders')
-        add_paths = get_stack_directories(base_folder, signature='.tif')
-        add_paths = [path.replace('\\', '/') for path in add_paths]
-        add_paths = np.unique(add_paths)
-        self.dirnames.extend(add_paths)
+        base_folders = tkfilebrowser.askopendirnames(title='Select base-directories', okbuttontext='Find stack folders')
+        for folder in base_folders:
+            add_paths = get_stack_directories(folder, signature='.tif')
+            add_paths = [path.replace('\\', '/') for path in add_paths]
+            add_paths = np.unique(add_paths)
+            self.dirnames.extend(add_paths)
         self.update_dirlist()
 
     def delete_stack(self):
