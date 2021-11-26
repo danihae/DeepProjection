@@ -44,13 +44,18 @@ def convert_to_stack(folder_in, folder_out, invert_order=False):
     # if len(shape) == 4:  # two color stack todo to be implemented
 
     if len(shape) == 3:  # if files are stacks
+        ts = []
         for file_i in files:
             basename_i = os.path.basename(file_i)
             if 'time' in basename_i:
                 t = int(re.findall(r'time(\d+)', basename_i)[0])
             else:
                 t = int(re.findall(r't(\d+)', basename_i)[0])
-            shutil.copy(file_i, folder_out + f'stack_{t}.tif')
+            ts.append(t)
+        if 0 not in ts:
+            ts -= np.min(ts)
+        for i, file_i in enumerate(files):
+            shutil.copy(file_i, folder_out + f'stack_{ts[i]}.tif')
         n_frames, n_slices, n_pixel = len(files), shape[0], shape[1:]
     elif len(shape) == 2:  # if files are single images
         # get # frames and stacks and create array
