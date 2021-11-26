@@ -24,12 +24,12 @@ def save_as_tif(imgs, filename):
     print('Saving prediction results as %s' % filename)
 
 
-def get_stack_directories(base_folder, signature='.tif', n_min=40):
+def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TIFF'), n_min=40):
     """ Get paths of directories containing {signature} """
     paths = []
     for root, dirs, files in os.walk(base_folder, topdown=False):
         for name in files:
-            if signature in name:
+            if np.count_nonzero([s in name for s in signatures]) > 0:
                 if len(files) >= n_min:
                     paths.append(root + '/')
     return paths
@@ -228,6 +228,7 @@ class TverskyLoss(nn.Module):
     Salehi, S. S. M., Erdogmus, D. & Gholipour, A. Tversky loss function for image segmentation using 3D fully
     convolutional deep networks. Arxiv (2017).
     """
+
     def __init__(self, alpha=0.5, beta=0.5, smooth=1):
         super(TverskyLoss, self).__init__()
         self.alpha = alpha
