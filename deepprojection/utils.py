@@ -48,9 +48,9 @@ def convert_to_stack(folder_in, folder_out, invert_order=False):
         for file_i in files:
             basename_i = os.path.basename(file_i)
             if 'time' in basename_i:
-                t = int(re.findall(r'time(\d+)', basename_i)[0])
+                t = int(re.findall(r'time_?(\d+)', basename_i)[0])
             else:
-                t = int(re.findall(r't(\d+)', basename_i)[0])
+                t = int(re.findall(r't_?(\d+)', basename_i)[0])
             ts.append(t)
         if 0 not in ts:
             ts -= np.min(ts)
@@ -63,10 +63,10 @@ def convert_to_stack(folder_in, folder_out, invert_order=False):
         for file_i in files:
             basename_i = os.path.basename(file_i)
             if 'time' in basename_i:
-                t = int(re.findall(r'time(\d+)', basename_i)[0])
+                t = int(re.findall(r'time_?(\d+)', basename_i)[0])
             else:
-                t = int(re.findall(r't(\d+)', basename_i)[0])
-            z = int(re.findall(r'z(\d+)', basename_i)[0])
+                t = int(re.findall(r't_?(\d+)', basename_i)[0])
+            z = int(re.findall(r'z_?(\d+)', basename_i)[0])
             ts.append(t)
             zs.append(z)
         ts, zs = np.asarray(ts), np.asarray(zs)
@@ -114,9 +114,9 @@ class MaxProjection:
             for file_i in self.files:
                 basename_i = os.path.basename(file_i)
                 if 'time' in basename_i:
-                    t = int(re.findall(r'time(\d+)', basename_i)[0])
+                    t = int(re.findall(r'time_?(\d+)', basename_i)[0])
                 else:
-                    t = int(re.findall(r't(\d+)', basename_i)[0])
+                    t = int(re.findall(r't_?(\d+)', basename_i)[0])
                 ts.append(t)
                 self.ts = ts
                 if 0 not in self.ts:
@@ -128,14 +128,14 @@ class MaxProjection:
             for file_i in self.files:
                 basename_i = os.path.basename(file_i)
                 if 'time' in basename_i:
-                    t = int(re.findall(r'time(\d+)', basename_i)[0])
+                    t = int(re.findall(r'time_?(\d+)', basename_i)[0])
                 else:
-                    t = int(re.findall(r't(\d+)', basename_i)[0])
-                z = int(re.findall(r'z(\d+)', basename_i)[0])
+                    t = int(re.findall(r't_?(\d+)', basename_i)[0])
+                z = int(re.findall(r'z_?(\d+)', basename_i)[0])
                 if 'channel' in basename_i:
-                    c = int(re.findall(r'channel(\d+)', basename_i)[0])
+                    c = int(re.findall(r'channel_?(\d+)', basename_i)[0])
                 else:
-                    c = int(re.findall(r'c(\d+)', basename_i)[0])
+                    c = int(re.findall(r'c_?(\d+)', basename_i)[0])
                 ts.append(t)
                 zs.append(z)
                 cs.append(c)
