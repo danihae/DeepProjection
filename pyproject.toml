@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "DeepProjection"
+version = "0.0.8"
+packages = [
+    { include = "deepprojection" }
+]
+description = "Trainable projection of 3D microscopy stacks using deep learning"
+authors = ["Daniel Haertter <dani.hae@posteo.de>"]
+license = "GPL-3.0-only"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+albumentations = "^0.5.2"
+barbar = "^0.2.1"
+tifffile = "*"
+tqdm = "^4.61.2"
+numpy = "^1.19.5"
+kornia = "^0.5"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
