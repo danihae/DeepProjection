@@ -10,20 +10,6 @@ from torch import nn as nn
 from tqdm import tqdm
 
 
-def save_as_tif(imgs, filename):
-    imgs = imgs - np.nanmin(imgs)
-    imgs /= np.nanmax(imgs)
-    imgs *= 255
-    imgs = imgs.astype('uint8')
-    if len(imgs.shape) == 3:  # if stack
-        with tifffile.TiffWriter(filename) as tiff:
-            for img in imgs:
-                tiff.save(img)
-    elif len(imgs.shape) == 2:  # if single image
-        tifffile.imsave(filename, imgs)
-    print('Saving prediction results as %s' % filename)
-
-
 def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TIFF'), n_min=40):
     """ Get paths of directories containing {signature} """
     paths = []
@@ -41,9 +27,14 @@ def convert_to_stack(folder_in, folder_out, invert_order=False):
     os.makedirs(folder_out, exist_ok=True)
     files = np.asarray([file for file in glob.glob(folder_in + '*') if 'txt' not in file])
     shape = tifffile.imread(files[0]).shape
-    # if len(shape) == 4:  # two color stack todo to be implemented
-
-    if len(shape) == 3:  # if files are stacks
+    # todo two color movies
+    if len(shape) == 4:  # TZXY stack
+        with tifffile.TiffFile(folder_in) as tif:
+            volume = tif.asarray()
+            for t, stack_t in enumerate(volume):
+                tifffile.imwrite(folder_out + f'stack_{t}.tif', stack_t)
+        n_frames, n_slices, n_pixel = volume.shape[0], volume.shape[1], volume.shape[2:]
+    elif len(shape) == 3:  # if files are stacks
         ts = []
         for file_i in files:
             basename_i = os.path.basename(file_i)
