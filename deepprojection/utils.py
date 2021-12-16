@@ -21,15 +21,26 @@ def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TI
     return paths
 
 
-def convert_to_stack(folder_in, folder_out, invert_order=False):
+def convert_to_stack(input_path, folder_out, invert_order=False):
     """ Parse single image data from 3D stacks and convert to 2D stacks for each time point.
-        If data is already in stacks, data is only copied to folder_out """
+        If data is already in stacks, data is only copied to folder_out
+
+    Parameters
+    ----------
+    input_path : str
+        For individual 3D stacks: input_path containing stacks (filesnames need to have time at end).
+        For 4D stacks: filename.
+    folder_out : str
+        Folder to copy data as individual 3D stacks
+    invert_order : bool
+        If True, invert z-order of stacks
+    """
     os.makedirs(folder_out, exist_ok=True)
-    files = np.asarray([file for file in glob.glob(folder_in + '*') if 'txt' not in file])
+    files = np.asarray([file for file in glob.glob(input_path + '*') if 'txt' not in file])
     shape = tifffile.imread(files[0]).shape
     # todo two color movies
     if len(shape) == 4:  # TZXY stack
-        with tifffile.TiffFile(folder_in) as tif:
+        with tifffile.TiffFile(input_path) as tif:
             volume = tif.asarray()
             for t, stack_t in enumerate(volume):
                 tifffile.imwrite(folder_out + f'stack_{t}.tif', stack_t)

@@ -13,21 +13,22 @@ class PredictMovie:
     Class for prediction of movies
     """
 
-    def __init__(self, folder, weights, model=ProjNet, filename_output=None, resize_dim=(512, 1024),
-                 clip_thrs=(0, 99.9), n_filter=8, mask_thrs=None, folder_color=None, normalization_mode='movie',
+    def __init__(self, input_path, weights, model=ProjNet, filename_output=None, resize_dim=(512, 1024),
+                 clip_thrs=(0, 99.9), n_filter=8, mask_thrs=None, input_color=None, normalization_mode='movie',
                  export_masks=False, invert_slices=False, temp_folder='../temp/', bigtiff=False):
         """
 
         Parameters
         ----------
-        folder : str
-            Folder containing stacks (filesnames need to have time at end)
+        input_path : str
+            For individual 3D stacks: input_path containing stacks (filesnames need to have time at end).
+            For 4D stacks: filename.
         weights : str
             Trained model weights
         model
             Network model
         filename_output : str
-            If not None, output is save to filename_output. If None, it is saved in the parent directory of the input
+            If not None, output is save to filename_output. If None, it is saved in the parent directory of the input_path
         resize_dim : tuple(int, int)
             Resize dimensions (has to be divisible by 8)
         clip_thrs : tuple(float, float)
@@ -36,8 +37,8 @@ class PredictMovie:
             Number of convolutional filters
         mask_thrs : float = None
             If not None, additional binary thresholding of predicted masks
-        folder_color
-            If not None, masks are applied to stacks of second fluorescent channel in folder_color
+        input_color
+            If not None, masks are applied to stacks of second fluorescent channel in folder_color. Not yet implemented.
         normalization_mode : str
             If 'movie', the intensity is normalized based on a cummulative histogram of all stacks, if 'stack',
             the intensities are normalized individually for each stack, if 'first', only the histogram of the first
@@ -49,10 +50,10 @@ class PredictMovie:
         bigtiff : bool
             If True, bigtiff format is used (file size >4GB)
         """
-        print(f'Predicting {folder} ...')
+        print(f'Predicting {input_path} ...')
 
-        self.folder = folder
-        self.folder_color = folder_color
+        self.input = input_path
+        self.input_color = input_color
         self.filename_output = filename_output
         self.temp_folder = temp_folder
 
@@ -66,14 +67,14 @@ class PredictMovie:
         self.export_masks = export_masks
         self.info = {'model': weights, 'mask_thrs': mask_thrs, 'clip_thrs': clip_thrs,
                      'normalization_mode': normalization_mode}
-        # temp folder
+        # temp input_path
         if os.path.exists(self.temp_folder):
             shutil.rmtree(self.temp_folder)
         os.makedirs(self.temp_folder, exist_ok=True)
 
         # read and preprocess data
-        print('Copying stacks to temp folder...')
-        self.n_frames, self.n_slices, self.n_pixel = convert_to_stack(self.folder, self.temp_folder,
+        print('Copying stacks to temp input_path...')
+        self.n_frames, self.n_slices, self.n_pixel = convert_to_stack(self.input, self.temp_folder,
                                                                       invert_order=invert_slices)
 
         # normalization modes
@@ -95,8 +96,10 @@ class PredictMovie:
             raise ValueError('Specify correct normalization mode (stack, first or movie)')
 
         if filename_output is None:
-            filename_output = self.folder[:-1] + '.tif'
-
+            if '.tif' in self.input:
+                filename_output = self.input[:-4] + '_result.tif'
+            else:
+                filename_output = self.input[:-1] + '.tif'
         # predict stacks and write in tiff file
         print('Predicting stacks...')
         with tifffile.TiffWriter(filename_output, bigtiff=bigtiff) as tif:
@@ -108,7 +111,7 @@ class PredictMovie:
                 tif.write(stack_t.result, metadata=self.info, contiguous=True)
 
         print(f'Result saved to {filename_output}.')
-        # delete temp folder
+        # delete temp input_path
         shutil.rmtree(self.temp_folder)
 
 
@@ -244,5 +247,5 @@ class PredictStack:
         self.result = np.max(result_temp, axis=0)
         if self.export_masks:
             self.masks = np.max(masks_temp, axis=0)
-        # change to input size (if zero padding) and save results
+        # change to input_path size (if zero padding) and save results
         self.result = self.result[:self.n_pixel[0], :self.n_pixel[1]]
