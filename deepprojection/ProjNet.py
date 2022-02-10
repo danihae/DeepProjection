@@ -59,7 +59,7 @@ class ProjNet(nn.Module):
     def sobel(self, x):
         shape = x.shape
         x = x.view((shape[0], *shape[-3:]))
-        x = kornia.sobel(x)
+        x = kornia.filters.sobel(x)
         return x
 
     def final(self, in_channels, out_channels):
