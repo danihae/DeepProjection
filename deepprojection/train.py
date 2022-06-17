@@ -99,7 +99,7 @@ class Trainer:
                 y_i = batch_i['mask'].view(self.batch_size, 1, self.n_slices, self.dim[0], self.dim[1]).to(device)
                 mult = torch.mul(y_i, x_i)
                 max_i = torch.max(mult, 2)[0]
-                edge = kornia.sobel(y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])).to(device)
+                edge = kornia.filters.sobel(y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])).to(device)
 
                 # Forward pass: Compute predicted y by passing x to the model
                 y_pred, mask_pred, edge_pred = self.model(x_i)
@@ -133,7 +133,7 @@ class Trainer:
                     y_i = batch_i['mask'].view(self.batch_size, 1, self.n_slices, self.dim[0], self.dim[1]).to(device)
                     mult = torch.mul(y_i, x_i)
                     max_i = torch.max(mult, 2)[0]
-                    edge = kornia.sobel(y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])).to(device)
+                    edge = kornia.filters.sobel(y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])).to(device)
 
                     # Forward pass: Compute predicted y by passing x to the model
                     y_pred, mask_pred, edge_pred = self.model(x_i)

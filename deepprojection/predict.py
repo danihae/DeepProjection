@@ -1,133 +1,7 @@
-import gc
-
-import numpy as np
-import tifffile
-
-from .utils import *
 from .ProjNet import ProjNet
+from .postprocess import *
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-
-class PredictMovie:
-    """
-    Class for prediction of movies
-    """
-
-    def __init__(self, input_path, weights, model=ProjNet, filename_output=None, filename_masks=None,
-                 export_masks=False, resize_dim=(512, 1024), clip_thrs=(0, 99.9), n_filter=8, mask_thrs=None,
-                 input_color=None, normalization_mode='movie', invert_slices=False, temp_folder='../temp/',
-                 bigtiff=False):
-        """
-
-        Parameters
-        ----------
-        input_path : str
-            For individual 3D stacks: input_path containing stacks (ind. filenames need to have time point at end).
-            For 4D stacks: filename of 4D hyperstack (time, z, x, y).
-        weights : str
-            Trained model weights
-        model
-            Network model
-        filename_output : str
-            If not None, output is save to filename_output. If None, it is saved in the parent directory of the input_path
-        resize_dim : tuple(int, int)
-            Resize dimensions (has to be divisible by 8)
-        clip_thrs : tuple(float, float)
-            Lower and higher percentile for intensity clipping
-        n_filter : int
-            Number of convolutional filters
-        mask_thrs : float = None
-            If not None, additional binary thresholding of predicted masks
-        input_color
-            If not None, masks are applied to stacks of second fluorescent channel in folder_color. Not yet implemented.
-        normalization_mode : str
-            If 'movie', the intensity is normalized based on a cummulative histogram of all stacks, if 'stack',
-            the intensities are normalized individually for each stack, if 'first', only the histogram of the first
-            frame is used.
-        export_masks : bool
-            If True, the predicted masks are stored in 4D stack (time, z, x, y)
-        invert_slices :
-            If True, z order of stacks is inverted prior to prediction
-        bigtiff : bool
-            If True, bigtiff format is used (file size >4GB)
-        """
-        print(f'Predicting {input_path} ...')
-
-        self.input = input_path
-        self.input_color = input_color
-        self.filename_output = filename_output
-        self.filename_masks = filename_masks
-        self.temp_folder = temp_folder
-
-        # params
-        self.resize_dim = resize_dim
-        # check resize_dim
-        if np.count_nonzero(np.mod(resize_dim, 8)) > 0:
-            raise ValueError(f'resize_dim {resize_dim} has to be divisible by 8.')
-        self.n_filter = n_filter
-        self.mask_thrs = mask_thrs
-        self.export_masks = export_masks
-        self.info = {'model': weights, 'mask_thrs': mask_thrs, 'clip_thrs': clip_thrs,
-                     'normalization_mode': normalization_mode}
-        # temp input_path
-        if os.path.exists(self.temp_folder):
-            shutil.rmtree(self.temp_folder)
-        os.makedirs(self.temp_folder, exist_ok=True)
-
-        # read and preprocess data
-        print('Copying stacks to temp input_path...')
-        self.n_frames, self.n_slices, self.n_pixel = convert_to_stack(self.input, self.temp_folder,
-                                                                      invert_order=invert_slices)
-
-        # normalization modes
-        print('Normalizing movie...')
-        if normalization_mode == 'stack':
-            clip_values = None
-        elif normalization_mode == 'first':
-            first_frame = tifffile.imread(self.temp_folder + 'stack_0.tif')
-            clip_values = (np.percentile(first_frame, clip_thrs[0]), np.percentile(first_frame, clip_thrs[1]))
-        elif normalization_mode == 'movie':
-            # get percentiles of all stacks
-            percentiles = np.zeros((self.n_frames, 2))
-            for t in tqdm(range(self.n_frames)):
-                stack_t = tifffile.imread(self.temp_folder + f'/stack_{t}.tif')
-                percentiles[t] = (np.percentile(stack_t, clip_thrs[0]),
-                                  np.percentile(stack_t, clip_thrs[1]))
-            clip_values = np.mean(percentiles, axis=0)
-        else:
-            raise ValueError('Specify correct normalization mode (stack, first or movie)')
-
-        if filename_output is None:
-            if '.tif' in self.input:
-                self.filename_output = self.input[:-4] + '_result.tif'
-                self.filename_masks = self.input[:-4] + '_masks.tif'
-            else:
-                self.filename_output = self.input[:-1] + '.tif'
-                self.filename_masks = self.input[:-1] + '_masks.tif'
-        # predict stacks and write in tiff file
-        print('Predicting stacks...')
-        with tifffile.TiffWriter(self.filename_output, bigtiff=bigtiff) as tif:
-            if self.export_masks:
-                with tifffile.TiffWriter(self.filename_masks, bigtiff=True) as tif_masks:
-                    for t in tqdm(range(self.n_frames)):
-                        stack_t = PredictStack(self.temp_folder + f'/stack_{t}.tif', filename_output=None, weights=weights,
-                                               model=model, resize_dim=resize_dim, clip_thrs=clip_thrs,
-                                               clip_values=clip_values, n_filter=n_filter, mask_thrs=mask_thrs,
-                                               export_masks=self.export_masks, invert_slices=invert_slices)
-                        tif.write(stack_t.result, metadata=self.info, contiguous=True)
-                        tif_masks.write(stack_t.masks, metadata=self.info, contiguous=True)
-                print(f'Result saved to {filename_output}, \n masks saved to {filename_masks}.')
-            else:
-                for t in tqdm(range(self.n_frames)):
-                    stack_t = PredictStack(self.temp_folder + f'/stack_{t}.tif', filename_output=None, weights=weights,
-                                           model=model, resize_dim=resize_dim, clip_thrs=clip_thrs,
-                                           clip_values=clip_values, n_filter=n_filter, mask_thrs=mask_thrs,
-                                           export_masks=self.export_masks, invert_slices=invert_slices)
-                    tif.write(stack_t.result, metadata=self.info, contiguous=True)
-                print(f'Result saved to {self.filename_output}.')
-        # delete temp input_path
-        shutil.rmtree(self.temp_folder)
 
 
 class PredictStack:
@@ -135,16 +9,13 @@ class PredictStack:
     Class for prediction of single stacks
     """
 
-    def __init__(self, filename, filename_output, weights, model=ProjNet, resize_dim=(512, 1024), clip_thrs=(0, 99.98),
-                 clip_values=None, n_filter=8, mask_thrs=None, export_masks=True, add_tile=0, invert_slices=False):
+    def __init__(self, stack, weights, model=ProjNet, resize_dim=(1024, 1024), clip_thrs=(0, 99.95),
+                 clip_values=None, mask_thrs=None, add_tile=0, invert_slices=False):
         """
-
         Parameters
         ----------
-        filename : str
-            Filename of stack
-        filename_output :
-            Filename of output. If None, result is not saved as tif file.
+        stack : ndarray
+            ZXY stack numpy array
         weights : str
             Trained model weights
         model
@@ -155,28 +26,19 @@ class PredictStack:
             Lower and higher percentile for intensity clipping
         clip_values : tuple
             If not None, clip_values are applied for normalization and clip_thrs is ignored.
-        n_filter : int
-            Number of convolutional filters
         mask_thrs : float = None
             If not None, additional binary thresholding of predicted masks
-        export_masks : bool
-            If True, the predicted masks are stored
         invert_slices : book
             If True, z order of stacks is inverted prior to prediction
         """
-        self.filename = filename
-        self.filename_output = filename_output
         self.resize_dim = resize_dim
-        self.n_filter = n_filter
         self.mask_thrs = mask_thrs
-        self.export_masks = export_masks
         self.add_tile = add_tile
-        # read and preprocess data
-        self.stack = tifffile.imread(self.filename).astype('float32')
+        # preprocess data
+        self.stack_input = stack.copy()
+        self.stack = stack.astype('float32')
         if invert_slices:
             self.stack = self.stack[::-1]
-        if len(self.stack.shape) == 4:  # if two color stack
-            self.stack = self.stack[:, 0]
         self.n_slices, self.n_pixel = self.stack.shape[0], self.stack.shape[1:]
         if clip_values is None:
             clip_values = (np.percentile(self.stack, clip_thrs[0]), np.percentile(self.stack, clip_thrs[1]))
@@ -184,22 +46,17 @@ class PredictStack:
         self.stack = self.stack - np.min(self.stack)
         self.stack = self.stack / np.max(self.stack)
         # split stacks in patches
-        self.split()
+        self.__split()
         # load model and predict data
-        self.model = model(n_filter=n_filter).to(device)
-        self.model.load_state_dict(torch.load(weights)['state_dict'])
+        weights_dict = torch.load(weights)
+        self.model = model(n_filter=weights_dict['n_filter']).to(device)
+        self.model.load_state_dict(weights_dict['state_dict'])
         self.model.eval()
-        self.predict()
+        self.__predict()
         # stitch patches back together
-        self.stitch()
-        # save result
-        if self.filename_output is not None:
-            tifffile.imsave(self.filename_output + '_result.tif', self.result.astype('uint8'))
-            if self.export_masks:
-                self.masks = self.masks[:, :self.n_pixel[0], :self.n_pixel[1]]
-                tifffile.imsave(self.filename_output + '_masks.tif', self.masks.astype('uint8'))
+        self.__stitch()
 
-    def split(self):
+    def __split(self):
         # number of patches in x and y
         self.n_x = int(np.ceil(self.n_pixel[1] / self.resize_dim[1])) + self.add_tile
         self.n_y = int(np.ceil(self.n_pixel[0] / self.resize_dim[0])) + self.add_tile
@@ -219,49 +76,33 @@ class PredictStack:
                                            self.x_start[k]:self.x_start[k] + self.resize_dim[1]]
                 n += 1
 
-    def predict(self):
+    def __predict(self):
         with torch.no_grad():
-            self.patches_result = np.zeros((self.n, self.resize_dim[0], self.resize_dim[1]), dtype='float32')
-            self.patches_masks = np.zeros_like(self.patches, dtype='float32')
+            self.patches_masks = np.zeros_like(self.patches, dtype='float16')
             for j, patch_j in enumerate(self.patches):
                 patch_j_torch = torch.from_numpy(patch_j).to(device)
                 patch_j_torch = patch_j_torch.view((1, 1, self.n_slices, self.resize_dim[0], self.resize_dim[1]))
                 res_j, mask_j, edge_j = self.model(patch_j_torch)
                 mask_j = mask_j.view((self.n_slices, self.resize_dim[0], self.resize_dim[1])).detach().cpu().numpy()
-                res_j = res_j.view((self.resize_dim[0], self.resize_dim[1])).detach().cpu().numpy()
                 # threshold mask
                 if self.mask_thrs is not None:
                     mask_j_thrs = np.copy(mask_j)
                     mask_j_thrs[mask_j < self.mask_thrs] = 0
                     mask_j_thrs[mask_j >= self.mask_thrs] = 1
-                    res_j = np.max(patch_j * mask_j_thrs, axis=0)
                     mask_j = mask_j_thrs
                 # write in array
-                self.patches_result[j] = res_j * 255
-                self.patches_masks[j] = mask_j * 255
-            gc.collect()
-            torch.cuda.empty_cache()
+                self.patches_masks[j] = mask_j
 
-    def stitch(self):
+    def __stitch(self):
         # create array
-        result_temp = np.zeros((self.n, np.max((self.resize_dim[0], self.n_pixel[0])),
-                                np.max((self.resize_dim[1], self.n_pixel[1]))), dtype='uint8')
-        if self.export_masks:
-            self.masks = np.zeros((self.n, self.n_slices, np.max((self.resize_dim[0], self.n_pixel[0])),
-                                   np.max((self.resize_dim[1], self.n_pixel[1]))), dtype='uint8')
+        self.masks = np.zeros((self.n, self.n_slices, np.max((self.resize_dim[0], self.n_pixel[0])),
+                               np.max((self.resize_dim[1], self.n_pixel[1]))), dtype='float16')
         n = 0
         for j in range(self.n_y):
             for k in range(self.n_x):
-                result_temp[n, self.y_start[j]:self.y_start[j] + self.resize_dim[0],
-                self.x_start[k]:self.x_start[k] + self.resize_dim[1]] = self.patches_result[n, :, :]
-                if self.export_masks:
-                    self.masks[n, :, self.y_start[j]:self.y_start[j] + self.resize_dim[0],
-                    self.x_start[k]:self.x_start[k] + self.resize_dim[1]] = self.patches_masks[n, :, :, :]
+                self.masks[n, :, self.y_start[j]:self.y_start[j] + self.resize_dim[0],
+                self.x_start[k]:self.x_start[k] + self.resize_dim[1]] = self.patches_masks[n, :, :, :]
                 n += 1
-        # maximum of overlapping regions
-        self.result = np.max(result_temp, axis=0)
-        # change to input_path size (if zero padding) and save results
-        self.result = self.result[:self.n_pixel[0], :self.n_pixel[1]]
-        if self.export_masks:
-            self.masks = np.max(self.masks, axis=0)
-            self.masks = self.masks[:, :self.n_pixel[0], : self.n_pixel[1]]
+        # max of masks in overlapping patches and resize masks
+        self.masks = np.max(self.masks, axis=0)[:, :self.n_pixel[0], : self.n_pixel[1]]
+        self.result = np.max(self.stack_input * self.masks, axis=0).astype(self.stack_input.dtype)

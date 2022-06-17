@@ -1,8 +1,9 @@
-numpy>=1.19.5
+numpy>=1.19.2
 tifffile>=2020.10.1
 torch>=1.7.0+cu110
 albumentations>=0.5.2
-kornia~=0.5.1
 barbar>=0.2.1
-tqdm>=4.62.0
+tqdm>=4.50.2
 future~=0.18.2
+scipy>=1.5.2
+tkfilebrowser

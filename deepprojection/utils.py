@@ -1,11 +1,11 @@
 import glob
 import os
 import re
-import shutil
 
 import numpy as np
 import tifffile
 import torch
+from scipy import ndimage
 from torch import nn as nn
 from tqdm import tqdm
 
@@ -21,78 +21,150 @@ def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TI
     return paths
 
 
-def convert_to_stack(input_path, folder_out, invert_order=False):
-    """ Parse single image data from 3D stacks and convert to 2D stacks for each time point.
-        If data is already in stacks, data is only copied to folder_out
+def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False, channel=0, fileext='.tif',
+                          bigtiff=False):
+    """ Parse input data (input_path) and convert to single hyperstack
 
     Parameters
     ----------
     input_path : str
-        For individual 3D stacks: input_path containing stacks (filesnames need to have time at end).
+        For individual 3D stacks or files: input_path containing stacks (filenames need to contain time t*_).
         For 4D stacks: filename.
-    folder_out : str
-        Folder to copy data as individual 3D stacks
+    file_out : str
+        Output tif-file of with 4D hyperstack (TZXY)
     invert_order : bool
         If True, invert z-order of stacks
+    channel : int
+        Fluorescent channel, only for 5D hyper stacks
+    fileext : str
+        File extension (default .tif)
+    bigtiff : bool
+        If True, bigtiff format is used (file size >4GB)
     """
-    os.makedirs(folder_out, exist_ok=True)
-    files = np.asarray([file for file in glob.glob(input_path + '*') if 'txt' not in file])
-    shape = tifffile.imread(files[0]).shape
-    # todo two color movies
-    if len(shape) == 4:  # TZXY stack
-        with tifffile.TiffFile(input_path) as tif:
-            volume = tif.asarray()
-            for t, stack_t in enumerate(volume):
-                tifffile.imwrite(folder_out + f'stack_{t}.tif', stack_t)
-        n_frames, n_slices, n_pixel = volume.shape[0], volume.shape[1], volume.shape[2:]
-    elif len(shape) == 3:  # if files are stacks
-        ts = []
-        for file_i in files:
-            basename_i = os.path.basename(file_i)
-            if 'time' in basename_i:
-                t = int(re.findall(r'time_?(\d+)', basename_i)[0])
+    # if file
+    if os.path.isfile(input_path):
+        data = tifffile.imread(input_path)
+        shape = data.shape
+        if format == 'ZXY':
+            if len(shape) == 3:
+                data = np.expand_dims(data, 0)
             else:
-                t = int(re.findall(r't_?(\d+)', basename_i)[0])
-            ts.append(t)
-        if 0 not in ts:
-            ts -= np.min(ts)
-        for i, file_i in enumerate(files):
-            shutil.copy(file_i, folder_out + f'stack_{ts[i]}.tif')
-        n_frames, n_slices, n_pixel = len(files), shape[0], shape[1:]
-    elif len(shape) == 2:  # if files are single images
-        # get # frames and stacks and create array
-        ts, zs = [], []
-        for file_i in files:
-            basename_i = os.path.basename(file_i)
-            if 'time' in basename_i:
-                t = int(re.findall(r'time_?(\d+)', basename_i)[0])
+                raise ValueError(f'Chosen format {format} not matching data')
+        elif format == 'TZXY':
+            if len(shape) != 4:
+                raise ValueError(f'Chosen format {format} not matching data')
+        elif format == 'TZCXY':
+            if len(shape) == 5:
+                data = data[:, :, channel]
             else:
-                t = int(re.findall(r't_?(\d+)', basename_i)[0])
-            z = int(re.findall(r'z_?(\d+)', basename_i)[0])
-            ts.append(t)
-            zs.append(z)
-        ts, zs = np.asarray(ts), np.asarray(zs)
-        # if counting starts not from zero, subtract offset
-        if 0 not in ts:
-            ts -= np.min(ts)
-        if 0 not in zs:
-            zs -= np.min(zs)
-        n_frames, n_slices, n_pixel = len(np.unique(ts)), len(np.unique(zs)), shape
-        # load data and save as stacks
-        for t in range(n_frames):
-            stack_t = np.zeros((len(np.unique(zs)), *shape), dtype='uint16')
-            files_t = files[ts == t]
-            z_t = zs[ts == t]
-            for z in range(n_slices):
-                file_z = files_t[z_t == z]
-                stack_t[z] = tifffile.imread(file_z)
-            if invert_order:
-                stack_t = stack_t[::-1]
-            tifffile.imsave(folder_out + f'stack_{t}.tif', stack_t)
+                raise ValueError(f'Chosen format {format} not matching data')
+        else:
+            raise ValueError(f'Chosen format {format} not valid')
+        if invert_order:
+            data = data[:, ::-1]
+        # save in tif file
+        n_frames, n_slices, n_pixel = data.shape[0], data.shape[1], data.shape[2:]
+        tifffile.imwrite(file_out, data, bigtiff=bigtiff)
+
+    # if directory with multiple files
+    elif os.path.isdir(input_path):
+        files = np.asarray([file for file in glob.glob(input_path + '*' + fileext)])
+        shape = tifffile.imread(files[0]).shape
+        dtype = tifffile.imread(files[0]).dtype
+        if format == 'T-ZXY':
+            if len(shape) == 3:  # if files are stacks
+                ts = []
+                for file_i in files:
+                    basename_i = os.path.basename(file_i)
+                    if 'time' in basename_i:
+                        t = int(re.findall(r'time_?(\d+)', basename_i)[0])
+                    else:
+                        t = int(re.findall(r't_?(\d+)', basename_i)[0])
+                    ts.append(t)
+                if 0 not in ts:
+                    ts -= np.min(ts)
+                # sort files
+                files = files[np.argsort(ts)]
+                with tifffile.TiffWriter(file_out, bigtiff=bigtiff) as tif:
+                    for t, file_t in files:
+                        data_t = tifffile.imread(file_t)
+                        if invert_order:
+                            data_t = data_t[::-1]
+                        tif.write(data_t, contiguous=True)
+                n_frames, n_slices, n_pixel = len(files), shape[0], shape[1:]
+            else:
+                raise ValueError(f'Chosen format {format} not matching data')
+
+        elif format == 'Z-XY':
+            if len(shape) == 2:
+                zs = []
+                for file_i in files:
+                    basename_i = os.path.basename(file_i)
+                    z = int(re.findall(r'z_?(\d+)', basename_i)[0])
+                    zs.append(z)
+                zs = np.asarray(zs)
+                # if counting starts not from zero, subtract offset
+                if 0 not in zs:
+                    zs -= np.min(zs)
+                n_frames, n_slices, n_pixel = 1, len(np.unique(zs)), shape
+                stack = np.zeros((len(np.unique(zs)), *shape), dtype=dtype)
+                for z in range(n_slices):
+                    file_z = files[zs == z]
+                    stack[z] = tifffile.imread(file_z)
+                if invert_order:
+                    stack = stack[::-1]
+                stack = np.expand_dims(stack, 0)
+                tifffile.imwrite(file_out, stack, bigtiff=bigtiff)
+            else:
+                raise ValueError(f'Chosen format {format} not matching data')
+
+        elif format == 'T-Z-XY':
+            if len(shape) == 2:
+                # get number frames and stacks and create array
+                ts, zs = [], []
+                for file_i in files:
+                    basename_i = os.path.basename(file_i)
+                    if 'time' in basename_i:
+                        t = int(re.findall(r'time_?(\d+)', basename_i)[0])
+                    else:
+                        t = int(re.findall(r't_?(\d+)', basename_i)[0])
+                    z = int(re.findall(r'z_?(\d+)', basename_i)[0])
+                    ts.append(t)
+                    zs.append(z)
+                ts, zs = np.asarray(ts), np.asarray(zs)
+                # if counting starts not from zero, subtract offset
+                if 0 not in ts:
+                    ts -= np.min(ts)
+                if 0 not in zs:
+                    zs -= np.min(zs)
+                n_frames, n_slices, n_pixel = 0, len(np.unique(zs)), shape
+                # load data and save as stacks
+                with tifffile.TiffWriter(file_out, bigtiff=bigtiff) as tif:
+                    for t in range(len(np.unique(ts))):
+                        stack_t = np.zeros((len(np.unique(zs)), *shape), dtype=dtype)
+                        files_t = files[ts == t]
+                        z_t = zs[ts == t]
+                        if len(z_t) == n_slices:
+                            for z in range(n_slices):
+                                file_z = files_t[z_t == z]
+                                stack_t[z] = tifffile.imread(file_z)
+                            if invert_order:
+                                stack_t = stack_t[::-1]
+                            tif.write(stack_t, contiguous=True)
+                            n_frames += 1
+            else:
+                raise ValueError(f'Chosen format {format} not matching data')
+        else:
+            raise ValueError(f'Chosen format {format} not valid')
     else:
         raise FileNotFoundError('Data structure unknown!')
 
     return n_frames, n_slices, n_pixel
+
+
+def rotate_hyperstack(data, angle):
+    """X-Y-Rotation of 4D hyperstack"""
+    return ndimage.rotate(data, angle=angle, axes=(2, 3), reshape=True)
 
 
 class MaxProjection:

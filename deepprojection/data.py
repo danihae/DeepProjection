@@ -30,7 +30,7 @@ class DataProcess(Dataset):
         source_dirs : tuple(str, str)
             Training data directories [raw_stacks_dir, masked_stacks_dir]
         dim_out : tuple(int, int)
-            Resize dimensions (has to be divisable by 8)
+            Resize dimensions (has to be divisible by 8)
         n_slices : int
             Number of slices per stack (needs to be larger than maximal slice number in data set, stacks smaller are
             zero-padded)
