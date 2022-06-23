@@ -8,6 +8,43 @@ import torch
 from scipy import ndimage
 from torch import nn as nn
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+
+
+# plot params
+fontsize = 8
+markersize = 3
+labelpad = 0.
+dpi = 600
+save_format = 'png'
+
+width_1cols = 3.5
+width_1p5cols = 5
+width_2cols = 7.1
+
+plt.rcParams.update({'font.size': fontsize, 'axes.labelpad': labelpad})
+plt.style.use('seaborn-paper')
+
+
+def label_all_panels(axs):
+    for key in axs.keys():
+        label_panel(axs[key], key)
+
+
+def label_panel(ax, label):
+    ax.text(-0.1, 1.1, label, transform=ax.transAxes,
+            fontsize=fontsize + 1, fontweight='bold', va='top', ha='right')
+
+
+def remove_all_spines(axs):
+    for key in axs.keys():
+        remove_spines(axs[key])
+
+
+def remove_spines(ax):
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
 
 
 def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TIFF'), n_min=40):

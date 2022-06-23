@@ -13,7 +13,7 @@ class Project:
     Main class for prediction of post-processing of stacks
     """
 
-    def __init__(self, input_path, data_format, weights, mode='mip', mask_thrs=None, time_average=0, filter_size=0, offset=0,
+    def __init__(self, input_path, data_format, weights, mode='mip', mask_thrs=None, filter_time=0, filter_size=0, offset=0,
                  channel=None, model=ProjNet, filename_output=None, filename_masks=None, resize_dim=(1024, 1024),
                  clip_thrs=(0, 99.95), normalization_mode='movie', invert_slices=False, temp_folder='../temp/',
                  bigtiff=False):
@@ -36,8 +36,8 @@ class Project:
             unique z-map is created (self.z_map).
         mask_thrs : float = None
             If not None, additional binary thresholding of predicted masks
-        time_average : int
-            Time-averaging window of masks (needs to be uneven integer)
+        filter_time : int
+            Filtering window of masks over time (maximum filter, needs to be uneven integer)
         filter_size : int
             Filter size for smoothing z-map (not for mode='mip')
         offset : list
@@ -76,7 +76,7 @@ class Project:
         if np.count_nonzero(np.mod(resize_dim, 8)) > 0:
             raise ValueError(f'resize_dim {resize_dim} has to be divisible by 8.')
         info = {'mode': mode, 'mask_thrs': mask_thrs, 'clip_thrs': clip_thrs,
-                'normalization_mode': normalization_mode, 'weights': weights, 'time_average': time_average,
+                'normalization_mode': normalization_mode, 'weights': weights, 'time_average': filter_time,
                 'filter_size': filter_size, 'offset': offset}
         # temp input_path
         if os.path.exists(self.temp_folder):
@@ -86,7 +86,7 @@ class Project:
         # read and preprocess data
         print('Copying stacks to temp input_path...')
         n_frames, n_slices, n_pixel = convert_to_hyperstack(self.input, self.temp_file, format=data_format,
-                                                            invert_order=invert_slices)
+                                                            invert_order=invert_slices, bigtiff=True)
 
         # normalization modes
         print('Normalizing movie...')
@@ -108,7 +108,7 @@ class Project:
 
         # set paths to store results and masks
         if self.filename_output is None:
-            if '.tif' in self.input:
+            if '.tif' in self.input or '.TIF' in self.input:
                 self.filename_output = self.input[:-4] + '_result.tif'
             else:
                 self.filename_output = self.input[:-1] + '.tif'
@@ -129,13 +129,13 @@ class Project:
                     tif_masks.write(masks_t.astype('uint8'), metadata=info, contiguous=True)
 
         # postprocessing
-        if mode != 'mip' or time_average != 0 or offset != 0:
+        if mode != 'mip' or filter_time != 0 or offset != 0:
             # load masks and input stacks
             masks = tifffile.imread(self.filename_masks)
             stacks = tifffile.imread(self.temp_file)
             # postprocessing (see postprocess.py)
             process = PostProcess(stacks, masks, channel=channel)
-            process.process(mode=mode, time_average=time_average, mask_thrs=mask_thrs, filter_size=filter_size,
+            process.process(mode=mode, filter_time=filter_time, mask_thrs=mask_thrs, filter_size=filter_size,
                             offset=offset)
             # remove empty dimensions
             process.result = np.squeeze(process.result)

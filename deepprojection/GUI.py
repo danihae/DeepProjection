@@ -57,7 +57,7 @@ class Projector(tk.Tk):
         tk.Button(self.lf_selector, text='Find all directories', command=self.get_subdirectories).place(x=10, y=65,
                                                                                                         width=120)
         # remove selected stacks / dirs
-        tk.Button(self.lf_selector, text='Remove stack', command=self.delete_job).place(x=10, y=95, width=120)
+        tk.Button(self.lf_selector, text='Remove item', command=self.delete_job).place(x=10, y=95, width=120)
         # clear list
         tk.Button(self.lf_selector, text='Clear list', command=self.clear_joblist).place(x=10, y=125, width=120)
         # list of paths (ability to add and remove)
@@ -242,7 +242,7 @@ class Projector(tk.Tk):
             if str(self.save_dir.get()) == '-results saved in parent directory-':
                 filename_output = None
             else:
-                filename_output = str(self.save_dir.get()) + os.path.basename(dir[:-1]) + '.tif'
+                filename_output = str(self.save_dir.get()) + os.path.basename(job[:-1]) + '.tif'
             try:
                 self.listbox.itemconfig(i, bg='blue', fg='white')
                 self.update()
@@ -250,7 +250,7 @@ class Projector(tk.Tk):
                         data_format=str(self.data_format.get()),
                         mode=str(self.mode.get()),
                         mask_thrs=eval(self.mask_thrs.get()),
-                        time_average=eval(self.time_average.get()),
+                        filter_time=eval(self.time_average.get()),
                         offset=eval(self.offset.get()),
                         channel=eval(self.channel.get()),
                         filename_output=filename_output,

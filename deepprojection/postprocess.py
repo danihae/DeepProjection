@@ -15,9 +15,11 @@ class PostProcess:
         """"""
         self.stacks, self.masks = stacks, masks
 
-        # expand masks dimensions of only single stack
+        # expand dimensions of only single stack
         if len(self.masks.shape) == 3:
             self.masks = np.expand_dims(self.masks, 0)
+        if len(self.stacks.shape) == 3:
+            self.stacks = np.expand_dims(self.stacks, 0)
 
         # select color channel
         if channel is not None:
@@ -29,7 +31,7 @@ class PostProcess:
 
         self.masks_edit, self.result, self.z_map, self.unfolded = None, None, None, None
 
-    def process(self, mode='mean', time_average=0, mask_thrs=0.25, filter_size=0, offset=0):
+    def process(self, mode='mean', filter_time=0, mask_thrs=0.25, filter_size=0, offset=0):
         """
         Post-processing of predicted masks
 
@@ -38,8 +40,8 @@ class PostProcess:
         mode : str
             Projection mode for masked stack ('mip', 'mean', 'median', 'max', 'min'). For all modes except 'mip' a
             unique z-map is created (self.z_map).
-        time_average : int
-            Time-averaging window of masks (needs to be uneven integer)
+        filter_time : int
+            Kernel size for temporal max. filter of masks (needs to be uneven integer)
         mask_thrs : float = None
             If not None, additional binary thresholding of predicted masks.
         filter_size : int
@@ -53,16 +55,16 @@ class PostProcess:
             raise ValueError(f'projection_mode {mode} not valid.')
 
         # time average masks
-        if time_average > 1:
-            masks_temp = filter_masks_time(self.masks, time_average, mode='mean')
+        if filter_time > 1:
+            masks_temp = filter_masks_time(self.masks, filter_time, mode='mean')
         else:
             masks_temp = self.masks.copy()
 
         # thresholding of masks
         if mask_thrs is None:
             raise ValueError('mask_thres has to be float [0-1]')
-        masks_temp[self.masks < 255 * mask_thrs] = 0
-        masks_temp[self.masks >= 255 * mask_thrs] = 1
+        masks_temp[masks_temp < 255 * mask_thrs] = 0
+        masks_temp[masks_temp >= 255 * mask_thrs] = 1
         masks_temp = masks_temp.astype('bool')
 
         self.masks_edit = np.zeros_like(self.masks, dtype='bool')
@@ -203,6 +205,7 @@ class PostProcess:
 
 
 def filter_masks_time(masks, size=3, mode='max'):
+    device = 'cpu'
     """Smoothing of masks over time (max pooling, min pooling, average pooling)"""
     # convert to torch tensor
     masks = torch.from_numpy(masks).type(torch.float).to(device)
