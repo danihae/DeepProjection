@@ -139,8 +139,11 @@ class Project:
                             offset=offset)
             # remove empty dimensions
             process.result = np.squeeze(process.result)
-            # save tif file
+            process.masks_edit = np.squeeze(process.masks_edit)
+            # remove empty dimensions and save tif file
             tifffile.imwrite(self.filename_output, process.result, metadata=info)
+            if filename_masks is not None:
+                tifffile.imwrite(filename_masks, process.masks_edit)
 
         print(f'Result saved to {self.filename_output}, \n masks saved to {self.filename_masks}.')
         # delete temp input_path
