@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "DeepProjection"
-version = "0.0.10"
+version = "1.0.0-alpha.0"
 packages = [
     { include = "deepprojection" }
 ]
@@ -14,8 +14,7 @@ albumentations = "^0.5.2"
 barbar = "^0.2.1"
 tifffile = "*"
 tqdm = "^4.61.2"
-numpy = "^1.19.5"
-kornia = "^0.5"
+numpy = "^1.18"
 
 [tool.poetry.dev-dependencies]
 
