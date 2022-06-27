@@ -12,7 +12,7 @@ D. Haertter et al., bioRxiv 2021.11.17.468809; doi: https://doi.org/10.1101/2021
 IMPORTANT: Convolutional neural networks run much faster on NVIDIA-GPUs than on CPUs. To enable training and prediction on GPUs, users need to install [CUDA toolkit](https://developer.nvidia.com/cuda-toolkit) and the corresponding version of PyTorch from the [official PyTorch website](https://pytorch.org/get-started/locally/). Select the correct version of CUDA on this webpage and run the command in your terminal. DeepProjection was tested with CUDA 11.0 and Pytorch 1.7.1.
 
 ### Python Package Index (PyPI)
-`pip install deepprojection`
+`pip install deepprojection` for earlier version, and `pip install deepprojection==1.0.0a0`for newest version with updated API. 
 
 ### Manual installation
 1. Download the code using the GitHub [.zip](https://github.com/danihae/DeepProjection/archive/refs/heads/main.zip) download option or clone repository.
