@@ -82,7 +82,7 @@ class PredictStack:
             for j, patch_j in enumerate(self.patches):
                 patch_j_torch = torch.from_numpy(patch_j).to(device)
                 patch_j_torch = patch_j_torch.view((1, 1, self.n_slices, self.resize_dim[0], self.resize_dim[1]))
-                res_j, mask_j, edge_j = self.model(patch_j_torch)
+                res_j, mask_j = self.model(patch_j_torch)
                 mask_j = mask_j.view((self.n_slices, self.resize_dim[0], self.resize_dim[1])).detach().cpu().numpy()
                 # threshold mask
                 if self.mask_thrs is not None:

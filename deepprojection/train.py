@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import kornia
 import torch.optim as optim
 from barbar import Bar
 from torch.utils.data import DataLoader, random_split
@@ -16,7 +15,7 @@ class Trainer:
     """
     def __init__(self, dataset, num_epochs, network, mode='binary_mask',
                  n_slices=20, batch_size=4, n_filter=32, lr=1e-4, val_split=0.25, save_dir='./trained_networks/',
-                 load_weights=None, save_iterations=False, weights_edge_loss=(1, 0), loss_func='BCEDiceLoss',
+                 load_weights=None, save_iterations=False, loss_func='BCEDiceLoss',
                  loss_params=(1, 1)):
         """
         Parameters
@@ -46,8 +45,6 @@ class Trainer:
             If not None, load pretrained weights prior to training in path "load_weights"
         save_iterations : bool
             If True, weight of each epoch are save in save_dir
-        weights_edge_loss : tuple(float, float) = (1, 0)
-            Ratio between edge loss and area loss (not clear if useful)
         loss_func : str
             Loss function ('BCEDiceLoss', 'TverskyLoss', 'logcoshTverskyLoss')
         loss_params : tuple(float, float)
@@ -60,7 +57,6 @@ class Trainer:
         self.mode = mode
         self.loss_func = loss_func
         self.loss_params = loss_params
-        self.weights_edge_loss = weights_edge_loss
         self.save_iterations = save_iterations
         self.n_slices = n_slices
         self.batch_size = batch_size
@@ -99,23 +95,15 @@ class Trainer:
                 y_i = batch_i['mask'].view(self.batch_size, 1, self.n_slices, self.dim[0], self.dim[1]).to(device)
                 mult = torch.mul(y_i, x_i)
                 max_i = torch.max(mult, 2)[0]
-                edge = kornia.filters.sobel(y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])).to(device)
 
                 # Forward pass: Compute predicted y by passing x to the model
-                y_pred, mask_pred, edge_pred = self.model(x_i)
+                y_pred, mask_pred = self.model(x_i)
 
                 # Compute and print loss
                 if self.mode == 'binary_mask':
                     loss = self.criterion(mask_pred, y_i)
                 elif self.mode == 'max_projection':
                     loss = self.criterion(y_pred, max_i)
-                elif self.mode == 'edge':
-                    mask_pred = mask_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                    y_i = y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                    edge_pred = edge_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                    edge = edge.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                    loss = self.weights_edge_loss[0] * self.criterion(mask_pred, y_i) + \
-                           self.weights_edge_loss[1] * self.criterion(edge_pred, edge)
                 else:
                     raise ValueError(f'Unknown mode {self.mode}.')
 
@@ -133,23 +121,15 @@ class Trainer:
                     y_i = batch_i['mask'].view(self.batch_size, 1, self.n_slices, self.dim[0], self.dim[1]).to(device)
                     mult = torch.mul(y_i, x_i)
                     max_i = torch.max(mult, 2)[0]
-                    edge = kornia.filters.sobel(y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])).to(device)
 
                     # Forward pass: Compute predicted y by passing x to the model
-                    y_pred, mask_pred, edge_pred = self.model(x_i)
+                    y_pred, mask_pred = self.model(x_i)
 
                     # Compute and print loss
                     if self.mode == 'binary_mask':
                         loss = self.criterion(mask_pred, y_i)
                     elif self.mode == 'max_projection':
                         loss = self.criterion(y_pred, max_i)
-                    elif self.mode == 'edge':
-                        mask_pred = mask_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                        y_i = y_i.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                        edge_pred = edge_pred.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                        edge = edge.view(self.batch_size, self.n_slices, self.dim[0], self.dim[1])
-                        loss = self.weights_edge_loss[0] * self.criterion(mask_pred, y_i) + \
-                               self.weights_edge_loss[1] * self.criterion(edge_pred, edge)
 
                     loss_list.append(loss.to('cpu'))
             val_loss = torch.stack(loss_list).mean()
@@ -174,7 +154,6 @@ class Trainer:
                 'n_filter': self.n_filter,
                 'datetime': datetime.now(),
                 'lr': self.lr,
-                'weight_edge_loss': self.weights_edge_loss,
                 'aug_factor': self.dataset.aug_factor,
                 'brightness_contrast': self.dataset.brightness_contrast,
                 'noise_amp': self.dataset.noise_amp,

@@ -56,12 +56,6 @@ class ProjNet(nn.Module):
         )
         return block
 
-    def sobel(self, x):
-        shape = x.shape
-        x = x.view((shape[0], *shape[-3:]))
-        x = kornia.filters.sobel(x)
-        return x
-
     def final(self, in_channels, out_channels):
         block = nn.Sequential(
             nn.Conv3d(in_channels, out_channels, kernel_size=(1, 1, 1), padding=(0, 0, 0)),
@@ -112,5 +106,4 @@ class ProjNet(nn.Module):
         mask = self.out(d8)
         mult = torch.mul(mask, x)
         out = torch.max(mult, 2)[0]
-        edge = self.sobel(mask)
-        return out, mask, edge
+        return out, mask
