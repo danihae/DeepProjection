@@ -5,7 +5,7 @@ import torch.nn as nn
 
 class ProjNet(nn.Module):
     """
-    Network for manifold extraction
+    Convolutional neural network for prediction of binary masks
     """
 
     def __init__(self, n_filter=32):

@@ -85,7 +85,7 @@ class Project:
 
         # read and preprocess data
         print('Copying stacks to temp input_path...')
-        n_frames, n_slices, n_pixel = convert_to_hyperstack(self.input, self.temp_file, format=data_format,
+        n_frames, n_slices, n_pixel = convert_to_hyperstack(self.input, self.temp_file, data_format=data_format,
                                                             invert_order=invert_slices, bigtiff=True)
 
         # normalization modes

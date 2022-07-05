@@ -12,7 +12,17 @@ class PostProcess:
     """Class for post-processing of predicted masks"""
 
     def __init__(self, stacks, masks, channel=None):
-        """"""
+        """
+        Parameters
+        ----------
+        stacks : ndarray
+            Numpy array of 3D (ZXY) or 4D (TZXY) hyperstack with input microscopy data
+        masks : ndarray
+            Numpy array of 3D (ZXY) or 4D (TZXY) hyperstack of binary masks. Binary masks can be saved with parameter
+            filename_mask in Project class.
+        channel : int
+            Color channel (hyperstack needs to have ZCXY or TZCXY format)
+        """
         self.stacks, self.masks = stacks, masks
 
         # expand dimensions of only single stack
@@ -29,7 +39,7 @@ class PostProcess:
         if not self.stacks.shape == self.masks.shape:
             raise ValueError('Stacks and masks need to have same shape')
 
-        self.masks_edit, self.result, self.z_map, self.unfolded = None, None, None, None
+        self.masks_edit, self.result, self.z_map, self.flattened = None, None, None, None
 
     def process(self, mode='mean', filter_time=0, mask_thrs=0.25, filter_size=0, offset=0):
         """
@@ -138,8 +148,22 @@ class PostProcess:
         # projection of masked stack
         self.result = np.max(masked_stack, axis=1)
 
-    def unfold(self, axis, ref, xyz_ratio, padding=(0, 0)):
+    def flatten(self, axis, ref, xyz_ratio, padding=(0, 0)):
+        """
+        Flatten curved tissue
 
+        Parameters
+        ----------
+        axis : int
+            Axis along which the tissue is to be flattened (for arbitrary axis, use rotate_hyperstack function to rotate
+            stack and masks prior to flattening
+        ref : int
+            Reference line for flattening
+        xyz_ratio : float
+            Ratio between xy- to z pixel size
+        padding : int
+            Padding of image prior to flattening, if flattened image is larger than original image
+        """
         # compute gradient from z-map
         gradient = np.gradient(self.z_map, axis=(1, 2))
 
@@ -187,7 +211,7 @@ class PostProcess:
 
         # transform image with map
         print('Transforming images...')
-        self.unfolded = np.zeros_like(res_)
+        self.flattened = np.zeros_like(res_)
         for t, res_t in enumerate(tqdm(res_)):
             def map_array(x):
                 if axis == 0:
@@ -195,17 +219,16 @@ class PostProcess:
                 elif axis == 1:
                     return x[1 - axis], map_[t, x[0], x[1]]
 
-            self.unfolded[t] = geometric_transform(res_t, map_array, order=2)
+            self.flattened[t] = geometric_transform(res_t, map_array, order=2)
 
     def save_result(self, filename, bigtiff=False):
-        tifffile.imsave(filename, self.result, bigtiff=bigtiff)
+        tifffile.imwrite(filename, self.result, bigtiff=bigtiff)
 
-    def save_unfolded(self, filename, bigtiff=False):
-        tifffile.imsave(filename, self.unfolded, bigtiff=bigtiff)
+    def save_flattened(self, filename, bigtiff=False):
+        tifffile.imwrite(filename, self.flattened, bigtiff=bigtiff)
 
 
-def filter_masks_time(masks, size=3, mode='max'):
-    device = 'cpu'
+def filter_masks_time(masks, size=3, mode='max', device=torch.device('cpu')):
     """Smoothing of masks over time (max pooling, min pooling, average pooling)"""
     # convert to torch tensor
     masks = torch.from_numpy(masks).type(torch.float).to(device)

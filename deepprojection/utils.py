@@ -8,47 +8,10 @@ import torch
 from scipy import ndimage
 from torch import nn as nn
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-
-
-# plot params
-fontsize = 8
-markersize = 3
-labelpad = 0.
-dpi = 600
-save_format = 'png'
-
-width_1cols = 3.5
-width_1p5cols = 5
-width_2cols = 7.1
-
-plt.rcParams.update({'font.size': fontsize, 'axes.labelpad': labelpad})
-plt.style.use('seaborn-paper')
-
-
-def label_all_panels(axs):
-    for key in axs.keys():
-        label_panel(axs[key], key)
-
-
-def label_panel(ax, label):
-    ax.text(-0.1, 1.1, label, transform=ax.transAxes,
-            fontsize=fontsize + 1, fontweight='bold', va='top', ha='right')
-
-
-def remove_all_spines(axs):
-    for key in axs.keys():
-        remove_spines(axs[key])
-
-
-def remove_spines(ax):
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-
 
 
 def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TIFF'), n_min=40):
-    """ Get paths of directories containing {signature} """
+    """ Get paths of directories containing any of the signatures """
     paths = []
     for root, dirs, files in os.walk(base_folder, topdown=False):
         for name in files:
@@ -58,7 +21,7 @@ def get_stack_directories(base_folder, signatures=('.tif', '.TIF', '.tiff', '.TI
     return paths
 
 
-def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False, channel=0, fileext='.tif',
+def convert_to_hyperstack(input_path, file_out, data_format='ZXY', invert_order=False, channel=0, fileext='.tif',
                           bigtiff=False):
     """ Parse input data (input_path) and convert to single hyperstack
 
@@ -69,6 +32,10 @@ def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False
         For 4D stacks: filename.
     file_out : str
         Output tif-file of with 4D hyperstack (TZXY)
+    data_format : str
+        Format of input data ('Z-XY': single slices of stack, 'ZXY': single stack, 'T-Z-XY': single slices of movie,
+            'T-ZXY': single stacks of movie, 'TZXY': hyperstack of movie, 'ZTCXY': hyperstack of multi-color movie,
+            'ZCXY': hyperstack of multi-color stack)
     invert_order : bool
         If True, invert z-order of stacks
     channel : int
@@ -82,21 +49,21 @@ def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False
     if os.path.isfile(input_path):
         data = tifffile.imread(input_path)
         shape = data.shape
-        if format == 'ZXY':
+        if data_format == 'ZXY':
             if len(shape) == 3:
                 data = np.expand_dims(data, 0)
             else:
-                raise ValueError(f'Chosen format {format} not matching data')
-        elif format == 'TZXY':
+                raise ValueError(f'Chosen data_format {data_format} not matching data')
+        elif data_format == 'TZXY':
             if len(shape) != 4:
-                raise ValueError(f'Chosen format {format} not matching data')
-        elif format == 'TZCXY':
+                raise ValueError(f'Chosen data_format {data_format} not matching data')
+        elif data_format == 'TZCXY':
             if len(shape) == 5:
                 data = data[:, :, channel]
             else:
-                raise ValueError(f'Chosen format {format} not matching data')
+                raise ValueError(f'Chosen data_format {data_format} not matching data')
         else:
-            raise ValueError(f'Chosen format {format} not valid')
+            raise ValueError(f'Chosen data_format {data_format} not valid')
         if invert_order:
             data = data[:, ::-1]
         # save in tif file
@@ -108,7 +75,7 @@ def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False
         files = np.asarray([file for file in glob.glob(input_path + '*' + fileext)])
         shape = tifffile.imread(files[0]).shape
         dtype = tifffile.imread(files[0]).dtype
-        if format == 'T-ZXY':
+        if data_format == 'T-ZXY':
             if len(shape) == 3:  # if files are stacks
                 ts = []
                 for file_i in files:
@@ -130,9 +97,9 @@ def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False
                         tif.write(data_t, contiguous=True)
                 n_frames, n_slices, n_pixel = len(files), shape[0], shape[1:]
             else:
-                raise ValueError(f'Chosen format {format} not matching data')
+                raise ValueError(f'Chosen data_format {data_format} not matching data')
 
-        elif format == 'Z-XY':
+        elif data_format == 'Z-XY':
             if len(shape) == 2:
                 zs = []
                 for file_i in files:
@@ -153,9 +120,9 @@ def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False
                 stack = np.expand_dims(stack, 0)
                 tifffile.imwrite(file_out, stack, bigtiff=bigtiff)
             else:
-                raise ValueError(f'Chosen format {format} not matching data')
+                raise ValueError(f'Chosen data_format {data_format} not matching data')
 
-        elif format == 'T-Z-XY':
+        elif data_format == 'T-Z-XY':
             if len(shape) == 2:
                 # get number frames and stacks and create array
                 ts, zs = [], []
@@ -190,9 +157,9 @@ def convert_to_hyperstack(input_path, file_out, format='ZXY', invert_order=False
                             tif.write(stack_t, contiguous=True)
                             n_frames += 1
             else:
-                raise ValueError(f'Chosen format {format} not matching data')
+                raise ValueError(f'Chosen data_format {data_format} not matching data')
         else:
-            raise ValueError(f'Chosen format {format} not valid')
+            raise ValueError(f'Chosen data_format {data_format} not valid')
     else:
         raise FileNotFoundError('Data structure unknown!')
 
