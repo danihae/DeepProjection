@@ -80,9 +80,6 @@ class Projector(tk.Tk):
         link.place(x=490, y=410)
         link.bind("<Button-1>", lambda e: webbrowser.open_new('https://github.com/danihae/DeepProjection/'))
 
-    def build_converter(self):
-        pass
-
     def build_detector(self):
         lf_detector = tk.LabelFrame(self, text='DeepProjection prediction')
         lf_detector.place(x=5, y=190, width=590, height=215)
@@ -159,9 +156,9 @@ class Projector(tk.Tk):
         self.radio_bigtiff.place(x=510, y=130)
         # buttons for prediction
         self.button_detect = tk.Button(lf_detector, text='Predict with DeepProjection', command=self.predict)
-        self.button_detect.place(x=5, y=165, width=280)
-        self.button_max_int = tk.Button(lf_detector, text='Maximum intensity projection', command=self.max_projection)
-        self.button_max_int.place(x=300, y=165, width=280)
+        self.button_detect.place(x=5, y=165, width=575)
+        # self.button_max_int = tk.Button(lf_detector, text='Maximum intensity projection', command=self.max_projection)
+        # self.button_max_int.place(x=300, y=165, width=280)
 
     # set status bar idle or ready
     def set_idle(self):
