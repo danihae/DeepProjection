@@ -1,5 +1,4 @@
 from .project import *
-from .CARE_projection import CARE_projection
 from .data import DataProcess
 from .predict import PredictStack
 from .postprocess import *
