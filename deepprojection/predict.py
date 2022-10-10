@@ -1,7 +1,16 @@
 from .ProjNet import ProjNet
 from .postprocess import *
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# select device
+if torch.has_cuda:
+    device = torch.device('cuda:0')
+elif hasattr(torch, 'has_mps'):  # only for apple m1/m2/...
+    if torch.has_mps:
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
+else:
+    device = torch.device('cpu')
 
 
 class PredictStack:

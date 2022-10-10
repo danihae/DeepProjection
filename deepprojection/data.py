@@ -10,15 +10,13 @@ from torch.utils.data import Dataset
 from albumentations import (Compose, Flip, GaussNoise, RandomBrightnessContrast, RandomRotate90)
 
 torch.set_default_dtype(torch.float32)
-torch.cuda.empty_cache()
-
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
 class DataProcess(Dataset):
     """
     Class for data preparation and pre-processing for network training
     """
+
     def __init__(self, source_dirs, dim_out=(128, 128), n_slices=20, aug_factor=10, noise_amp=10,
                  brightness_contrast=(0.15, 0.15), random_flip_z=False, padding_mode='edge', clip_thrs=(0.0, 99.95),
                  mode='binary_mask', data_path='./data/', create=True):
@@ -66,7 +64,7 @@ class DataProcess(Dataset):
         self.source_dirs = source_dirs
         self.dim_out = dim_out
         # check dim_out
-        if np.count_nonzero(np.mod(dim_out, 8))>0:
+        if np.count_nonzero(np.mod(dim_out, 8)) > 0:
             raise ValueError(f'dim_out {dim_out} has to be divisible by 8.')
         self.aug_factor = aug_factor
         self.brightness_contrast = brightness_contrast
@@ -118,7 +116,7 @@ class DataProcess(Dataset):
             stack_i = stack_i / np.max(stack_i) * 255
             stack_i = stack_i.astype('uint8')
             shape_i = stack_i.shape
-            if self.n_slices<shape_i[0]:
+            if self.n_slices < shape_i[0]:
                 raise ValueError(f'n_slices needs to be larger than number of slices. {file_i}: {shape_i[0]} slices.')
             stack_i = np.pad(stack_i, ((0, self.n_slices - shape_i[0]), (0, 0), (0, 0)), mode=self.padding_mode)
             save_i = os.path.splitext(os.path.basename(file_i))[0]
@@ -194,7 +192,7 @@ class DataProcess(Dataset):
             for j in range(n_x):
                 for k in range(n_y):
                     patch_ij = merge[:, x_start[j]:x_start[j] + self.dim_out[0],
-                                    y_start[k]:y_start[k] + self.dim_out[1]]
+                               y_start[k]:y_start[k] + self.dim_out[1]]
                     tifffile.imsave(self.split_merge_path + '%s_%s_%s.tif' % (i, j, k), patch_ij)
                     tifffile.imsave(self.split_input_path + '%s_%s_%s.tif' % (i, j, k),
                                     patch_ij[self.mask_shape[0]:, :, :])
