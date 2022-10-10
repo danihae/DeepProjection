@@ -21,7 +21,7 @@ class DataProcess(Dataset):
     """
     def __init__(self, source_dirs, dim_out=(128, 128), n_slices=20, aug_factor=10, noise_amp=10,
                  brightness_contrast=(0.15, 0.15), random_flip_z=False, padding_mode='edge', clip_thrs=(0.0, 99.95),
-                 mode='binary_mask', data_path='./data/', create=False):
+                 mode='binary_mask', data_path='./data/', create=True):
         """
         Modifies and augments training data, and then a training data object for trainer
 
@@ -107,6 +107,7 @@ class DataProcess(Dataset):
         """
         # create input data
         files_input = glob.glob(self.source_dirs[0] + '*')
+        print(files_input)
         for file_i in files_input:
             stack_i = tifffile.imread(file_i)
             self.stack_shape = stack_i.shape
