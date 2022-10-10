@@ -1,6 +1,5 @@
 # DeepProjection: Specific and robust projection of curved 2D tissue sheets from 3D microscopy using deep learning
-Code repository for publication: Haertter, D. et al., Development (2022) [doi:10.1242/dev.200621](doi:10.1242/dev.200621).
-  
+Code repository for publication: Haertter, D. et al., Development (2022) [doi:10.1242/dev.200621](https://doi:10.1242/dev.200621).
 
 ![Fig1](https://user-images.githubusercontent.com/36985758/142215302-88e8748e-2af7-46ce-8ac0-84f52cf51203.png)
 **Comparison of DeepProjection with maximum intensity projection.** A: Maximum intensity projection (MIP) of a single stack (8 slices, 1 µm z-distance) of images of the dorsal opening of a Drosophila embryo during dorsal closure, cell boundaries labeled with Cadherin-GFP. B: MIP of as single stack (53 slices, 2 µm z-distance) of images of a zebrafish periderm labeled with labeled krt4-lyn-GFP. A’-D’: y-z cuts of 3D image stacks at red dashed line in A-B. C’ and D’ show the masked stack with the manifolds predicted by DP. C, D: DeepProjection (DP) results from the same stacks of Drosophila and zebrafish embryo. E, F: Zoom into amnioserosal tissue in Drosophila comparing MIP (E) and DP (F), showing successful masking of yolk granules and gut tissue underneath the amnioserosal tissue. G, H: Zoom into zebrafish embryo comparing MIP (G) and DP (H), showing masking of underlying epithelial tissue layer. Scale bars: A, C 50 µm; B, D 100 µm; E-F 10 µm; G, H: 50 µm.
