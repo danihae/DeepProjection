@@ -4,6 +4,7 @@ import torch.optim as optim
 from barbar import Bar
 from torch.utils.data import DataLoader, random_split
 
+from . import ProjNet
 from .utils import *
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -13,7 +14,7 @@ class Trainer:
     """
     Class for training of neural network for surface projection
     """
-    def __init__(self, dataset, num_epochs, network, mode='binary_mask',
+    def __init__(self, dataset, num_epochs, network=ProjNet, mode='binary_mask',
                  n_slices=20, batch_size=4, n_filter=32, lr=1e-4, val_split=0.25, save_dir='./trained_networks/',
                  load_weights=None, save_iterations=False, loss_func='BCEDiceLoss',
                  loss_params=(1, 1)):
