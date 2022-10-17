@@ -1,5 +1,5 @@
 import numpy as np
-import tifffile
+from tifffile import TiffWriter
 from tqdm import tqdm
 import torch
 from scipy.ndimage import generic_filter, geometric_transform
@@ -80,10 +80,12 @@ class PostProcess:
             masks_temp = self.masks.copy()
 
         # thresholding of masks
-        if mask_thrs is None:
-            raise ValueError('mask_thres has to be float [0-1]')
-        masks_temp[masks_temp < 255 * mask_thrs] = 0
-        masks_temp[masks_temp >= 255 * mask_thrs] = 1
+        if not masks_temp.max():  # check whether masks are already binary
+            if mask_thrs is None:
+                raise ValueError('mask_thres has to be float [0-1]')
+            print('here')
+            masks_temp[masks_temp < 255 * mask_thrs] = 0
+            masks_temp[masks_temp >= 255 * mask_thrs] = 1
         masks_temp = masks_temp.astype('bool')
 
         self.masks_edit = np.zeros_like(self.masks, dtype='bool')
@@ -134,6 +136,10 @@ class PostProcess:
             # if single offset value convert to list
             if isinstance(offset, int):
                 offset = [offset]
+
+            # if numpy array -> convert to list
+            if isinstance(offset, np.ndarray):
+                offset = list(offset)
 
             # iterate list of offsets
             if isinstance(offset, list):
@@ -231,10 +237,14 @@ class PostProcess:
             self.flattened[t] = geometric_transform(res_t, map_array, order=2)
 
     def save_result(self, filename, bigtiff=False):
-        tifffile.imwrite(filename, self.result, bigtiff=bigtiff)
+        with TiffWriter(filename, bigtiff=bigtiff) as tif:
+            for frame in self.result:
+                tif.write(frame, contiguous=True)
 
     def save_flattened(self, filename, bigtiff=False):
-        tifffile.imwrite(filename, self.flattened, bigtiff=bigtiff)
+        with TiffWriter(filename, bigtiff=bigtiff) as tif:
+            for frame in self.flattened:
+                tif.write(frame, contiguous=True)
 
 
 def filter_masks_time(masks, size=3, mode='max', device=torch.device('cpu')):
