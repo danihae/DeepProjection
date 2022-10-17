@@ -1,7 +1,7 @@
 numpy>=1.19.2
 tifffile>=2020.10.1
 torch>=1.7.0+cu110
-albumentations>=0.5.2
+albumentations
 barbar>=0.2.1
 tqdm>=4.50.2
 future~=0.18.2
