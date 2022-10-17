@@ -75,6 +75,8 @@ class Project:
         # check resize_dim
         if np.count_nonzero(np.mod(resize_dim, 8)) > 0:
             raise ValueError(f'resize_dim {resize_dim} has to be divisible by 8.')
+        if isinstance(offset, np.ndarray):
+            offset = offset.tolist()
         info = {'mode': mode, 'mask_thrs': mask_thrs, 'clip_thrs': clip_thrs,
                 'normalization_mode': normalization_mode, 'weights': weights, 'time_average': filter_time,
                 'filter_size': filter_size, 'offset': offset}
@@ -141,7 +143,9 @@ class Project:
             process.result = np.squeeze(process.result)
             process.masks_edit = np.squeeze(process.masks_edit)
             # remove empty dimensions and save tif file
-            tifffile.imwrite(self.filename_output, process.result, metadata=info)
+            with TiffWriter(self.filename_output, bigtiff=bigtiff) as tif:
+                for frame in process.result:
+                    tif.write(frame, contiguous=True)
             if filename_masks is not None:
                 tifffile.imwrite(filename_masks, process.masks_edit)
 

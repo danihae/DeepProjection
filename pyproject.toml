@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "DeepProjection"
-version = "1.0.0-alpha.1"
+version = "1.0.0"
 packages = [
     { include = "deepprojection" }
 ]
@@ -10,7 +10,7 @@ license = "GPL-3.0-only"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-albumentations = "^0.5"
+albumentations = "^0.4"
 barbar = "^0.2"
 tifffile = "*"
 tqdm = "^4.61"

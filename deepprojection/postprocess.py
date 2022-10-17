@@ -64,7 +64,7 @@ class PostProcess:
         mask_thrs : float = None
             If not None, additional binary thresholding of predicted masks.
         filter_size : int
-            Filter size for smoothing z-map (not for mode='mip')
+            Filter size for smoothing z-map (not for mode='mip'), needs to be uneven integer
         offset : list
             z-offset of masks. Can be single value, or list of values (not for 'mip'), e.g. [0, 1, 2].
             For all modes except 'mip' the z-map shifted by offset value, or for a list of values, multiple z-positions
@@ -175,7 +175,7 @@ class PostProcess:
         ref : int
             Reference line for flattening
         xyz_ratio : float
-            Ratio between xy- to z pixel size
+            Ratio between xy- to z resolution
         padding : int
             Padding of image prior to flattening, if flattened image is larger than original image
         """
